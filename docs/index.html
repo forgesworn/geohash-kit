@@ -7,8 +7,6 @@
 
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
-
   <!-- App styles -->
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -71,7 +69,11 @@
       <!-- Cover panel -->
       <div class="panel-content hidden" data-panel="cover">
         <h2>Cover</h2>
-        <p class="hint">Draw a polygon on the map using the toolbar. Use the button below to clear and start again.</p>
+        <p class="hint">Click on the map to place polygon vertices. Click the first point again or press "Finish" to close the shape.</p>
+        <div id="cover-drawing" class="hidden">
+          <span class="mono" id="cover-vertex-count"></span>
+          <button id="cover-finish" class="btn btn-finish">Finish polygon</button>
+        </div>
         <div id="cover-info" class="hidden">
           <div class="field">
             <label>Cells</label>
@@ -131,8 +133,6 @@
 
   <!-- Leaflet -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
-
   <!-- App -->
   <script type="module" src="demo.js"></script>
 </body>

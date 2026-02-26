@@ -192,6 +192,17 @@ select {
 
 .btn:hover { background: var(--border); }
 
+.btn-finish {
+  background: #1a3a1a;
+  border-color: #66bb6a;
+  color: #66bb6a;
+  margin-left: 0.5rem;
+}
+
+.btn-finish:hover {
+  background: #2a4a2a;
+}
+
 .btn-clear {
   background: #4a1a1a;
   border-color: #ef5350;
@@ -204,22 +215,11 @@ select {
   background: #6a2a2a;
 }
 
-/* --- Leaflet.draw toolbar (larger icons) --- */
-.leaflet-draw-toolbar a {
-  width: 36px;
-  height: 36px;
-  line-height: 36px;
-  background-size: 360px 30px;
-}
-
-.leaflet-draw-toolbar {
-  margin-top: 12px;
-}
-
-.leaflet-draw-actions a {
-  font-size: 13px;
-  line-height: 28px;
-  height: 28px;
+#cover-drawing {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 /* --- Footer --- */

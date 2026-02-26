@@ -20,26 +20,13 @@ const layers = {
   nostr: L.layerGroup().addTo(map),
 }
 
-// --- Leaflet.draw (for Cover tab) ---
-const drawnItems = new L.FeatureGroup()
-map.addLayer(drawnItems)
-
-const drawControl = new L.Control.Draw({
-  draw: {
-    polygon: true,
-    polyline: false,
-    rectangle: false,
-    circle: false,
-    marker: false,
-    circlemarker: false,
-  },
-  edit: { featureGroup: drawnItems },
-})
-
 // --- State ---
 let activeTab = 'explore'
 let exploreLatLng = null
 let coverPolygon = null
+let coverVertices = []    // click-to-draw vertices
+let coverDrawing = false  // currently placing vertices?
+let coverPolyline = null  // preview line while drawing
 
 // --- Tab switching ---
 const tabs = document.querySelectorAll('.tab')
@@ -57,13 +44,14 @@ function switchTab(tab) {
     else map.removeLayer(layer)
   })
 
-  // Show/hide draw control
-  if (tab === 'cover') {
-    map.addControl(drawControl)
-    map.addLayer(drawnItems)
-  } else {
-    map.removeControl(drawControl)
-    map.removeLayer(drawnItems)
+  // Reset drawing state when leaving cover tab
+  if (tab !== 'cover' && coverDrawing) {
+    cancelDrawing()
+  }
+
+  // Start drawing mode when entering cover tab (if no polygon yet)
+  if (tab === 'cover' && !coverPolygon) {
+    startDrawing()
   }
 }
 
@@ -75,6 +63,7 @@ switchTab('explore')
 // --- Map click handler (delegates to active tab) ---
 map.on('click', (e) => {
   if (activeTab === 'explore') onExploreClick(e.latlng)
+  else if (activeTab === 'cover') onCoverClick(e.latlng)
   else if (activeTab === 'nostr') onNostrClick(e.latlng)
 })
 
@@ -174,7 +163,7 @@ function renderExplore() {
 }
 
 // =====================================================
-//  COVER TAB
+//  COVER TAB — click-to-draw polygon
 // =====================================================
 
 const coverMaxCells = document.getElementById('cover-max-cells')
@@ -182,6 +171,9 @@ const coverMaxCellsValue = document.getElementById('cover-max-cells-value')
 const coverMerge = document.getElementById('cover-merge')
 const coverMergeValue = document.getElementById('cover-merge-value')
 const coverClear = document.getElementById('cover-clear')
+const coverFinish = document.getElementById('cover-finish')
+const coverDrawingEl = document.getElementById('cover-drawing')
+const coverVertexCount = document.getElementById('cover-vertex-count')
 
 coverMaxCells.addEventListener('input', () => {
   coverMaxCellsValue.textContent = coverMaxCells.value
@@ -195,24 +187,105 @@ coverMerge.addEventListener('input', () => {
 
 coverClear.addEventListener('click', () => {
   coverPolygon = null
-  drawnItems.clearLayers()
+  coverVertices = []
   layers.cover.clearLayers()
   document.getElementById('cover-info').classList.add('hidden')
+  startDrawing()
 })
 
-map.on(L.Draw.Event.CREATED, (e) => {
-  drawnItems.clearLayers()
-  layers.cover.clearLayers()
-  drawnItems.addLayer(e.layer)
+coverFinish.addEventListener('click', () => {
+  finishPolygon()
+})
 
-  // Extract [lon, lat] pairs from drawn polygon
-  const latlngs = e.layer.getLatLngs()[0]
-  coverPolygon = latlngs.map(ll => [ll.lng, ll.lat])
-  // Close the ring
+function startDrawing() {
+  coverDrawing = true
+  coverVertices = []
+  coverDrawingEl.classList.remove('hidden')
+  coverVertexCount.textContent = '0 vertices'
+  if (coverPolyline) {
+    layers.cover.removeLayer(coverPolyline)
+    coverPolyline = null
+  }
+}
+
+function cancelDrawing() {
+  coverDrawing = false
+  coverVertices = []
+  coverDrawingEl.classList.add('hidden')
+  if (coverPolyline) {
+    layers.cover.removeLayer(coverPolyline)
+    coverPolyline = null
+  }
+  layers.cover.clearLayers()
+}
+
+function onCoverClick(latlng) {
+  if (!coverDrawing) return
+
+  // Check if clicking near the first vertex to close the polygon
+  if (coverVertices.length >= 3) {
+    const first = coverVertices[0]
+    const dist = map.latLngToContainerPoint(latlng).distanceTo(
+      map.latLngToContainerPoint(first)
+    )
+    if (dist < 15) {
+      finishPolygon()
+      return
+    }
+  }
+
+  coverVertices.push(latlng)
+
+  // Draw vertex marker
+  L.circleMarker(latlng, {
+    radius: 6,
+    color: '#4fc3f7',
+    fillColor: '#4fc3f7',
+    fillOpacity: 0.8,
+    weight: 2,
+  }).addTo(layers.cover)
+
+  // Update preview polyline
+  if (coverPolyline) layers.cover.removeLayer(coverPolyline)
+  if (coverVertices.length > 1) {
+    coverPolyline = L.polyline(coverVertices, {
+      color: '#4fc3f7',
+      weight: 2,
+      dashArray: '6, 8',
+    }).addTo(layers.cover)
+  }
+
+  // Update vertex count
+  const n = coverVertices.length
+  coverVertexCount.textContent = `${n} ${n === 1 ? 'vertex' : 'vertices'}`
+}
+
+function finishPolygon() {
+  if (coverVertices.length < 3) return
+
+  coverDrawing = false
+  coverDrawingEl.classList.add('hidden')
+
+  // Convert to [lon, lat] pairs and close the ring
+  coverPolygon = coverVertices.map(ll => [ll.lng, ll.lat])
   coverPolygon.push([...coverPolygon[0]])
 
+  // Clear drawing artifacts and render coverage
+  layers.cover.clearLayers()
+  if (coverPolyline) {
+    coverPolyline = null
+  }
+
+  // Draw the polygon outline
+  L.polygon(coverVertices, {
+    color: '#4fc3f7',
+    fillColor: '#4fc3f7',
+    fillOpacity: 0.05,
+    weight: 2,
+  }).addTo(layers.cover)
+
   renderCover()
-})
+}
 
 function renderCover() {
   const maxCells = parseInt(coverMaxCells.value)
@@ -226,7 +299,6 @@ function renderCover() {
     document.getElementById('cover-count').textContent = `Error: ${err.message}`
     document.getElementById('cover-range').textContent = '\u2014'
     document.getElementById('cover-code').innerHTML = ''
-    layers.cover.clearLayers()
     return
   }
 
@@ -251,8 +323,14 @@ function renderCover() {
     `// ${hashes.length} cells (precision ${minP === maxP ? minP : minP + '\u2013' + maxP})`,
   ])
 
-  // Draw cells
+  // Draw coverage cells (keep existing polygon outline, add cells underneath)
+  // Remove old cells but keep the polygon outline (first layer)
+  const existingLayers = []
+  layers.cover.eachLayer(l => {
+    if (l instanceof L.Polygon && !(l instanceof L.Rectangle)) existingLayers.push(l)
+  })
   layers.cover.clearLayers()
+  existingLayers.forEach(l => layers.cover.addLayer(l))
   hashes.forEach(h => drawCell(layers.cover, h))
 }
 
