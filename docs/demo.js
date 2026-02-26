@@ -11,9 +11,10 @@ import {
 // --- Map setup ---
 const map = L.map('map').setView([51.5074, -0.1278], 12)
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom: 19,
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+  maxZoom: 20,
+  subdomains: 'abcd',
 }).addTo(map)
 
 // --- Layer groups (one per tab, swapped on tab switch) ---
