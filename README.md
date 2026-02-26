@@ -172,7 +172,7 @@ const all = parseGTags(event.tags)    // [{ geohash, precision }, ...]
 | Feature | geohash-kit | ngeohash | geohashing | latlon-geohash | geohash-poly | shape2geohash | nostr-geotags |
 |---------|:-----------:|:--------:|:----------:|:--------------:|:------------:|:-------------:|:-------------:|
 | TypeScript native | **Yes** | No | Yes | No | No | No | Yes |
-| ESM-only | **Yes** | No | Yes | No | No | No | Yes |
+| ESM-only | **Yes** | No | No | Yes | No | No | Yes |
 | Zero dependencies | **Yes** | Yes | Yes | Yes | No (10) | No (11) | No (2) |
 | Polygon → geohashes | **Multi-precision** | — | — | — | Single-precision | Single-precision | — |
 | Multi-precision output | **Yes** | — | — | — | No | No | — |
@@ -181,12 +181,12 @@ const all = parseGTags(event.tags)    // [{ geohash, precision }, ...]
 | Convex hull | **Yes** | No | No | No | No | No | No |
 | Deduplication | **Yes** | No | No | No | No | No | No |
 | Distance / radius | **Yes** | No | No | No | No | No | No |
-| Neighbours / rings | **Yes** | Yes | No | Yes | No | No | No |
+| Neighbours / rings | **Yes** | Yes | Yes | Yes | No | No | No |
 | Nostr g-tag ladders | **Yes** | No | No | No | No | No | Partial |
 | Nostr REQ filters | **Yes** | No | No | No | No | No | No |
 | Input validation | **Yes** | No | No | No | No | No | No |
-| Last published | 2026 | 2022 | 2024 | 2022 | 2022 | 2022 | 2025 |
-| Weekly downloads | — | ~171k | ~2k | ~19k | ~1k | ~1k | <100 |
+| Last published | 2026 | 2018 | 2024 | 2019 | 2019 | 2022 | 2025 |
+| Weekly downloads | — | ~171k | ~7k | ~19k | ~1k | ~500 | <100 |
 
 ## Migrating from ngeohash
 
