@@ -1,6 +1,6 @@
 # geohash-kit
 
-**The modern TypeScript geohash toolkit — encode, decode, cover polygons, and build Nostr filters.**
+**The modern TypeScript geohash toolkit — encode, decode, cover polygons, and discover location-based Nostr events.**
 
 [![npm](https://img.shields.io/npm/v/geohash-kit)](https://www.npmjs.com/package/geohash-kit)
 [![licence](https://img.shields.io/npm/l/geohash-kit)](./LICENCE)
@@ -12,7 +12,7 @@
 - **Modern TypeScript** — native types, ESM-only, tree-shakeable subpath exports. Zero dependencies. A drop-in replacement for `ngeohash`.
 - **Smart polygon coverage** — adaptive multi-precision subdivision produces compact geohash sets (coarse interior, fine edges). Other polygon libraries use single-precision brute-force, producing 10-100x more cells for the same area.
 - **Production-hardened** — input validation on all public APIs, RangeError on invalid/infeasible parameters, 736 tests including fuzz and property-based suites.
-- **Nostr-native** — the only library that generates correct multi-precision `g`-tag ladders for publishing and `#g` filter arrays for REQ subscriptions.
+- **Nostr-native** — generates multi-precision `g`-tag ladders for publishing and location-based `#g` filter arrays for REQ subscriptions. Production-proven in the Trotters provider dispatch platform for location-based provider discovery.
 
 ## Install
 
@@ -71,6 +71,11 @@ const filter = createGTagFilter(51.5074, -0.1278, 5000)
 ## For Nostr Developers
 
 Nostr relays match `#g` tags by exact equality — there's no prefix matching. An event tagged `["g", "gcpvjb"]` won't match filter `{"#g": ["gcpvj"]}`. The workaround is a **tag ladder**: publish every precision prefix, subscribe at the right precision with neighbour expansion.
+
+**Real-world use case:** The Trotters provider dispatch platform uses geohash-kit to:
+- Publish provider profiles with `g`-tag ladders for discoverability
+- Subscribe to nearby providers using `expandRings` for ring-based location queries
+- Filter events by geohash proximity for location-based matching
 
 ### Publishing
 
