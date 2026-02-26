@@ -198,7 +198,6 @@ coverClear.addEventListener('click', () => {
   drawnItems.clearLayers()
   layers.cover.clearLayers()
   document.getElementById('cover-info').classList.add('hidden')
-  coverClear.classList.add('hidden')
 })
 
 map.on(L.Draw.Event.CREATED, (e) => {
@@ -224,7 +223,6 @@ function renderCover() {
     hashes = polygonToGeohashes(coverPolygon, { maxCells, mergeThreshold })
   } catch (err) {
     document.getElementById('cover-info').classList.remove('hidden')
-    coverClear.classList.remove('hidden')
     document.getElementById('cover-count').textContent = `Error: ${err.message}`
     document.getElementById('cover-range').textContent = '\u2014'
     document.getElementById('cover-code').innerHTML = ''
@@ -239,7 +237,6 @@ function renderCover() {
 
   // Update panel
   document.getElementById('cover-info').classList.remove('hidden')
-  coverClear.classList.remove('hidden')
   document.getElementById('cover-count').textContent = `${hashes.length} cells`
   document.getElementById('cover-range').textContent = minP === maxP ? `${minP}` : `${minP}\u2013${maxP}`
 
