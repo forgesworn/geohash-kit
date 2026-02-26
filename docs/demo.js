@@ -70,15 +70,15 @@ map.on('click', (e) => {
 // --- Precision colour scale ---
 const PRECISION_COLOURS = [
   '', // 0 (unused)
-  '#1565c0', // 1 — deep blue
-  '#1976d2', // 2
-  '#1e88e5', // 3
-  '#42a5f5', // 4
-  '#66bb6a', // 5 — green
-  '#fdd835', // 6 — yellow
-  '#ffa726', // 7 — orange
-  '#ef5350', // 8 — red
-  '#ad1457', // 9 — deep pink
+  '#ff00ff', // 1 — magenta
+  '#d946ef', // 2
+  '#a855f7', // 3 — purple
+  '#6366f1', // 4
+  '#3b82f6', // 5 — blue
+  '#06b6d4', // 6 — cyan
+  '#10b981', // 7
+  '#22c55e', // 8 — green
+  '#84cc16', // 9 — lime
 ]
 
 function hashColour(hash) {
@@ -358,7 +358,7 @@ function onNostrClick(latlng) {
 }
 
 // Ring colour bands (centre → outer)
-const RING_COLOURS = ['#4fc3f7', '#66bb6a', '#ffa726', '#ef5350']
+const RING_COLOURS = ['#3b82f6', '#06b6d4', '#22c55e', '#ff00ff']
 
 function renderNostr() {
   const { lat, lng: lon } = nostrLatLng
