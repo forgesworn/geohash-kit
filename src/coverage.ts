@@ -253,7 +253,6 @@ export function polygonToGeohashes(
       const allHashes: string[] = []
       let bailed = false
       for (const { outer, holes } of children) {
-        if (outer.length < 3) continue
         const result = computeGeohashes(outer, holes, minPrecision, mp, threshold, bailout)
         if (result === null) { bailed = true; break }
         allHashes.push(...result)
@@ -266,7 +265,6 @@ export function polygonToGeohashes(
     // Fallback: minPrecision with threshold=0
     const fallbackAll: string[] = []
     for (const { outer, holes } of children) {
-      if (outer.length < 3) continue
       const result = computeGeohashes(outer, holes, minPrecision, minPrecision, 0) ?? []
       fallbackAll.push(...result)
     }
