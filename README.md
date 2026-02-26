@@ -7,6 +7,8 @@
 ![zero deps](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-native-blue)
 
+**[Interactive Demo](https://thecryptodonkey.github.io/geohash-kit/)** — try every API function on a live map.
+
 ## Why geohash-kit?
 
 - **Modern TypeScript** — native types, ESM-only, tree-shakeable subpath exports. Zero dependencies. A drop-in replacement for `ngeohash`.
