@@ -1,6 +1,6 @@
 {
   "name": "geohash-kit",
-  "version": "1.0.4",
+  "version": "1.0.0",
   "description": "Modern TypeScript geohash toolkit — encode, decode, cover polygons, and build Nostr filters",
   "type": "module",
   "main": "./dist/index.js",
