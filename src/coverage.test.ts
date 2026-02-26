@@ -745,6 +745,39 @@ describe('polygonToGeohashes — MultiPolygon global maxCells', () => {
     expect(result.length).toBeGreaterThan(0)
     expect(result.length).toBeLessThanOrEqual(500)
   })
+
+  it('throws for MultiPolygon child crossing the antimeridian', () => {
+    const crossingMulti = {
+      type: 'MultiPolygon' as const,
+      coordinates: [
+        [[[170, -10], [-170, -10], [-170, 10], [170, 10], [170, -10]]],
+      ],
+    }
+    expect(() => polygonToGeohashes(crossingMulti)).toThrow(/antimeridian/)
+  })
+
+  it('throws for MultiPolygon child with fewer than 3 vertices', () => {
+    const degenerateMulti = {
+      type: 'MultiPolygon' as const,
+      coordinates: [
+        [[[0, 0], [1, 1]]],
+      ],
+    }
+    expect(() => polygonToGeohashes(degenerateMulti)).toThrow(/at least 3 vertices/)
+  })
+
+  it('throws when second child crosses antimeridian (first child valid)', () => {
+    const mixedMulti = {
+      type: 'MultiPolygon' as const,
+      coordinates: [
+        // Valid: London
+        [[[-0.15, 51.49], [-0.05, 51.49], [-0.05, 51.54], [-0.15, 51.54], [-0.15, 51.49]]],
+        // Invalid: crosses antimeridian
+        [[[170, -10], [-170, -10], [-170, 10], [170, 10], [170, -10]]],
+      ],
+    }
+    expect(() => polygonToGeohashes(mixedMulti)).toThrow(/antimeridian/)
+  })
 })
 
 describe('deduplicateGeohashes', () => {
