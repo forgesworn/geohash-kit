@@ -11,7 +11,7 @@
 
 - **Modern TypeScript** — native types, ESM-only, tree-shakeable subpath exports. Zero dependencies. A drop-in replacement for `ngeohash`.
 - **Smart polygon coverage** — adaptive multi-precision subdivision produces compact geohash sets (coarse interior, fine edges). Other polygon libraries use single-precision brute-force, producing 10-100x more cells for the same area.
-- **Production-hardened** — input validation on all public APIs, RangeError on invalid/infeasible parameters, 717 tests including fuzz and property-based suites.
+- **Production-hardened** — input validation on all public APIs, RangeError on invalid/infeasible parameters, 736 tests including fuzz and property-based suites.
 - **Nostr-native** — the only library that generates correct multi-precision `g`-tag ladders for publishing and `#g` filter arrays for REQ subscriptions.
 
 ## Install
