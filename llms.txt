@@ -2,6 +2,8 @@
 
 > Modern TypeScript geohash toolkit — encode, decode, cover polygons, and build Nostr filters.
 
+Interactive demo: https://thecryptodonkey.github.io/geohash-kit/
+
 Zero dependencies. ESM-only. Three subpath exports.
 
 ## Install

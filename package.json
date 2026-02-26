@@ -46,6 +46,7 @@
   ],
   "author": "TheCryptoDonkey",
   "license": "MIT",
+  "homepage": "https://thecryptodonkey.github.io/geohash-kit/",
   "repository": {
     "type": "git",
     "url": "https://github.com/TheCryptoDonkey/geohash-kit.git"
