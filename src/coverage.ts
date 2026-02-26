@@ -234,6 +234,19 @@ export function polygonToGeohashes(
       normalisePolygonInput({ type: 'Polygon', coordinates: polyCoords }),
     )
 
+    // Validate all children before computing
+    for (const { outer } of children) {
+      if (outer.length < 3) {
+        throw new Error('Polygon must have at least 3 vertices')
+      }
+      for (let i = 0; i < outer.length; i++) {
+        const j = (i + 1) % outer.length
+        if (Math.abs(outer[i][0] - outer[j][0]) > 180) {
+          throw new Error('Polygons crossing the antimeridian (±180° longitude) are not supported')
+        }
+      }
+    }
+
     // Retry loop from maxPrecision down to minPrecision
     const bailout = maxCells * 4
     for (let mp = maxPrecision; mp >= minPrecision; mp--) {
