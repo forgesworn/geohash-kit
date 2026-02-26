@@ -43,6 +43,20 @@
             <button class="btn btn-sm" id="explore-mode-children">Children</button>
           </div>
         </div>
+        <div class="field">
+          <label>Precision</label>
+          <select id="explore-precision">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+          </select>
+        </div>
         <div id="explore-info" class="hidden">
           <div class="field">
             <label>Geohash</label>
@@ -61,18 +75,8 @@
             <span id="explore-radius" class="mono"></span>
           </div>
           <div class="field">
-            <label>Precision</label>
-            <select id="explore-precision">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5" selected>5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-              <option value="9">9</option>
-            </select>
+            <label>radiusToPrecision</label>
+            <span id="explore-r2p" class="mono"></span>
           </div>
           <div class="code-block" id="explore-code"></div>
         </div>
@@ -118,6 +122,12 @@
           <span class="mono" id="cover-vertex-count"></span>
           <button id="cover-finish" class="btn btn-finish">Finish polygon</button>
         </div>
+        <div id="cover-pip" class="hidden">
+          <div class="field">
+            <label>pointInPolygon</label>
+            <span id="cover-pip-result" class="mono"></span>
+          </div>
+        </div>
         <div id="cover-info" class="hidden">
           <div class="field">
             <label>Cells</label>
@@ -160,6 +170,20 @@
       <div class="panel-content hidden" data-panel="nostr">
         <h2>Nostr</h2>
         <p class="hint">Click anywhere on the map to generate Nostr tags.</p>
+        <div class="field">
+          <label>Precision</label>
+          <select id="nostr-precision">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+          </select>
+        </div>
         <div id="nostr-info" class="hidden">
           <div class="field">
             <label>g-tag ladder</label>
@@ -168,6 +192,10 @@
           <div class="field">
             <label>REQ filter (createGTagFilter)</label>
             <div class="code-block" id="nostr-filter"></div>
+          </div>
+          <div class="field">
+            <label>createGTagFilterFromGeohashes</label>
+            <div class="code-block" id="nostr-from-hashes"></div>
           </div>
           <div class="field">
             <label>nearbyFilter</label>
