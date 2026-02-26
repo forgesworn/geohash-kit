@@ -1,8 +1,11 @@
 // --- Local import of geohash-kit ---
 import {
-  encode, decode, bounds, neighbours,
-  polygonToGeohashes, geohashesToGeoJSON,
-  createGTagLadder, createGTagFilter, expandRings,
+  encode, decode, bounds, neighbours, children, contains, matchesAny,
+  distance, distanceFromCoords, radiusToPrecision, precisionToRadius,
+  polygonToGeohashes, geohashesToGeoJSON, geohashesToConvexHull,
+  deduplicateGeohashes, pointInPolygon,
+  createGTagLadder, createGTagFilter, createGTagFilterFromGeohashes,
+  expandRings, nearbyFilter, parseGTags, bestGeohash,
 } from './lib/index.js'
 
 // --- Map setup ---
@@ -22,11 +25,17 @@ const layers = {
 
 // --- State ---
 let activeTab = 'explore'
+let exploreMode = 'encode'  // 'encode' | 'distance' | 'children'
 let exploreLatLng = null
+let distancePointA = null
+let distancePointB = null
 let coverPolygon = null
-let coverVertices = []    // click-to-draw vertices
-let coverDrawing = false  // currently placing vertices?
-let coverPolyline = null  // preview line while drawing
+let coverVertices = []
+let coverDrawing = false
+let coverPolyline = null
+let coverHashes = null
+let showHull = false
+let showGeoJSON = false
 
 // --- Tab switching ---
 const tabs = document.querySelectorAll('.tab')
@@ -57,7 +66,7 @@ function switchTab(tab) {
 
 tabs.forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)))
 
-// Initial state — show explore layers, hide others
+// Initial state
 switchTab('explore')
 
 // --- Map click handler (delegates to active tab) ---
@@ -67,7 +76,7 @@ map.on('click', (e) => {
   else if (activeTab === 'nostr') onNostrClick(e.latlng)
 })
 
-// --- Precision colour scale ---
+// --- Precision colour scale (neon/cyberpunk) ---
 const PRECISION_COLOURS = [
   '', // 0 (unused)
   '#ff00ff', // 1 — magenta
@@ -112,17 +121,66 @@ function codeSnippet(lines) {
     .join('\n')
 }
 
-// =====================================================
-//  EXPLORE TAB
-// =====================================================
-
-function onExploreClick(latlng) {
-  exploreLatLng = latlng
-  renderExplore()
+// --- Helper: format distance ---
+function formatDistance(metres) {
+  if (metres >= 1000) return `${(metres / 1000).toFixed(2)} km`
+  return `${metres.toFixed(1)} m`
 }
 
+// =====================================================
+//  EXPLORE TAB — mode switcher
+// =====================================================
+
+const exploreModeEncode = document.getElementById('explore-mode-encode')
+const exploreModeDistance = document.getElementById('explore-mode-distance')
+const exploreModeChildren = document.getElementById('explore-mode-children')
+const exploreHint = document.querySelector('[data-panel="explore"] .hint')
+
+function setExploreMode(mode) {
+  exploreMode = mode
+  layers.explore.clearLayers()
+
+  // Toggle active button
+  exploreModeEncode.classList.toggle('active', mode === 'encode')
+  exploreModeDistance.classList.toggle('active', mode === 'distance')
+  exploreModeChildren.classList.toggle('active', mode === 'children')
+
+  // Toggle panels
+  document.getElementById('explore-info').classList.add('hidden')
+  document.getElementById('explore-distance-info').classList.add('hidden')
+  document.getElementById('explore-children-info').classList.add('hidden')
+
+  // Update hint
+  if (mode === 'encode') exploreHint.textContent = 'Click anywhere on the map to encode a geohash.'
+  else if (mode === 'distance') {
+    exploreHint.textContent = 'Click two points on the map to measure distance.'
+    distancePointA = null
+    distancePointB = null
+  }
+  else if (mode === 'children') exploreHint.textContent = 'Click anywhere to see the 32 child cells.'
+}
+
+exploreModeEncode.addEventListener('click', () => setExploreMode('encode'))
+exploreModeDistance.addEventListener('click', () => setExploreMode('distance'))
+exploreModeChildren.addEventListener('click', () => setExploreMode('children'))
+
+function onExploreClick(latlng) {
+  if (exploreMode === 'encode') {
+    exploreLatLng = latlng
+    renderExplore()
+  } else if (exploreMode === 'distance') {
+    onDistanceClick(latlng)
+  } else if (exploreMode === 'children') {
+    exploreLatLng = latlng
+    renderChildren()
+  }
+}
+
+// --- Encode mode ---
+
 document.getElementById('explore-precision').addEventListener('change', () => {
-  if (exploreLatLng) renderExplore()
+  if (exploreLatLng && exploreMode === 'encode') renderExplore()
+  if (exploreLatLng && exploreMode === 'children') renderChildren()
 })
 
 function renderExplore() {
@@ -132,6 +190,7 @@ function renderExplore() {
   const hash = encode(lat, lon, precision)
   const decoded = decode(hash)
   const adj = neighbours(hash)
+  const cellRadius = precisionToRadius(precision)
 
   // Update panel
   document.getElementById('explore-info').classList.remove('hidden')
@@ -140,9 +199,10 @@ function renderExplore() {
     `${decoded.lat.toFixed(6)}, ${decoded.lon.toFixed(6)}`
   document.getElementById('explore-error').textContent =
     `\u00b1${decoded.error.lat.toFixed(6)}\u00b0 lat, \u00b1${decoded.error.lon.toFixed(6)}\u00b0 lon`
+  document.getElementById('explore-radius').textContent = formatDistance(cellRadius)
 
   document.getElementById('explore-code').innerHTML = codeSnippet([
-    `import { encode, decode, neighbours } from 'geohash-kit'`,
+    `import { encode, decode, neighbours, precisionToRadius } from 'geohash-kit'`,
     ``,
     `const hash = encode(${lat.toFixed(4)}, ${lon.toFixed(4)}, ${precision})`,
     `// '${hash}'`,
@@ -152,6 +212,9 @@ function renderExplore() {
     ``,
     `const adj = neighbours('${hash}')`,
     `// { n: '${adj.n}', ne: '${adj.ne}', e: '${adj.e}', ... }`,
+    ``,
+    `const radius = precisionToRadius(${precision})`,
+    `// ${cellRadius} metres`,
   ])
 
   // Draw cells
@@ -160,6 +223,90 @@ function renderExplore() {
   Object.values(adj).forEach(h =>
     drawCell(layers.explore, h, { fillOpacity: 0.12, weight: 1 })
   )
+}
+
+// --- Distance mode ---
+
+function onDistanceClick(latlng) {
+  if (!distancePointA) {
+    distancePointA = latlng
+    distancePointB = null
+    layers.explore.clearLayers()
+    L.circleMarker(latlng, { radius: 8, color: '#ff00ff', fillColor: '#ff00ff', fillOpacity: 0.8 }).addTo(layers.explore)
+    exploreHint.textContent = 'Now click a second point.'
+    document.getElementById('explore-distance-info').classList.add('hidden')
+  } else {
+    distancePointB = latlng
+    L.circleMarker(latlng, { radius: 8, color: '#84cc16', fillColor: '#84cc16', fillOpacity: 0.8 }).addTo(layers.explore)
+    L.polyline([distancePointA, distancePointB], { color: '#4fc3f7', weight: 2, dashArray: '6, 8' }).addTo(layers.explore)
+    renderDistance()
+    exploreHint.textContent = 'Click two points on the map to measure distance.'
+    distancePointA = null
+    distancePointB = null
+  }
+}
+
+function renderDistance() {
+  const precision = parseInt(document.getElementById('explore-precision').value)
+  const hashA = encode(distancePointA.lat, distancePointA.lng, precision)
+  const hashB = encode(distancePointB.lat, distancePointB.lng, precision)
+  const dist = distance(hashA, hashB)
+  const coordDist = distanceFromCoords(distancePointA.lat, distancePointA.lng, distancePointB.lat, distancePointB.lng)
+  const cont = contains(hashA, hashB)
+  const match = matchesAny(hashA, [hashB])
+
+  drawCell(layers.explore, hashA, { color: '#ff00ff', fillOpacity: 0.2, weight: 2 })
+  drawCell(layers.explore, hashB, { color: '#84cc16', fillOpacity: 0.2, weight: 2 })
+
+  document.getElementById('explore-distance-info').classList.remove('hidden')
+  document.getElementById('distance-hash-a').textContent = hashA
+  document.getElementById('distance-hash-b').textContent = hashB
+  document.getElementById('distance-result').textContent =
+    `${formatDistance(dist)} (cell centres) · ${formatDistance(coordDist)} (exact)`
+  document.getElementById('distance-contains').textContent =
+    `contains: ${cont} · matchesAny: ${match}`
+
+  document.getElementById('distance-code').innerHTML = codeSnippet([
+    `import { distance, distanceFromCoords, contains, matchesAny } from 'geohash-kit'`,
+    ``,
+    `distance('${hashA}', '${hashB}')`,
+    `// ${formatDistance(dist)}`,
+    ``,
+    `distanceFromCoords(${distancePointA.lat.toFixed(4)}, ${distancePointA.lng.toFixed(4)}, ${distancePointB.lat.toFixed(4)}, ${distancePointB.lng.toFixed(4)})`,
+    `// ${formatDistance(coordDist)}`,
+    ``,
+    `contains('${hashA}', '${hashB}') // ${cont}`,
+    `matchesAny('${hashA}', ['${hashB}']) // ${match}`,
+  ])
+}
+
+// --- Children mode ---
+
+function renderChildren() {
+  const { lat, lng: lon } = exploreLatLng
+  const precision = parseInt(document.getElementById('explore-precision').value)
+  const hash = encode(lat, lon, precision)
+  const kids = children(hash)
+
+  layers.explore.clearLayers()
+
+  // Draw parent cell outline
+  drawCell(layers.explore, hash, { fillOpacity: 0.05, weight: 2, color: '#4fc3f7' })
+
+  // Draw all 32 children
+  kids.forEach(k => drawCell(layers.explore, k, { fillOpacity: 0.3, weight: 1 }))
+
+  document.getElementById('explore-children-info').classList.remove('hidden')
+  document.getElementById('children-parent').textContent = `${hash} (precision ${precision})`
+  document.getElementById('children-list').textContent = kids.join(', ')
+
+  document.getElementById('children-code').innerHTML = codeSnippet([
+    `import { children } from 'geohash-kit'`,
+    ``,
+    `const kids = children('${hash}')`,
+    `// 32 children at precision ${precision + 1}`,
+    `// ['${kids[0]}', '${kids[1]}', '${kids[2]}', ...]`,
+  ])
 }
 
 // =====================================================
@@ -174,6 +321,8 @@ const coverClear = document.getElementById('cover-clear')
 const coverFinish = document.getElementById('cover-finish')
 const coverDrawingEl = document.getElementById('cover-drawing')
 const coverVertexCount = document.getElementById('cover-vertex-count')
+const coverToggleHull = document.getElementById('cover-toggle-hull')
+const coverToggleGeoJSON = document.getElementById('cover-toggle-geojson')
 
 coverMaxCells.addEventListener('input', () => {
   coverMaxCellsValue.textContent = coverMaxCells.value
@@ -188,13 +337,33 @@ coverMerge.addEventListener('input', () => {
 coverClear.addEventListener('click', () => {
   coverPolygon = null
   coverVertices = []
+  coverHashes = null
+  showHull = false
+  showGeoJSON = false
+  coverToggleHull.classList.remove('toggled')
+  coverToggleGeoJSON.classList.remove('toggled')
+  document.getElementById('cover-geojson-wrap').classList.add('hidden')
   layers.cover.clearLayers()
   document.getElementById('cover-info').classList.add('hidden')
   startDrawing()
 })
 
-coverFinish.addEventListener('click', () => {
-  finishPolygon()
+coverFinish.addEventListener('click', () => finishPolygon())
+
+coverToggleHull.addEventListener('click', () => {
+  showHull = !showHull
+  coverToggleHull.classList.toggle('toggled', showHull)
+  if (coverHashes) renderCoverLayers()
+})
+
+coverToggleGeoJSON.addEventListener('click', () => {
+  showGeoJSON = !showGeoJSON
+  coverToggleGeoJSON.classList.toggle('toggled', showGeoJSON)
+  document.getElementById('cover-geojson-wrap').classList.toggle('hidden', !showGeoJSON)
+  if (showGeoJSON && coverHashes) {
+    const geojson = geohashesToGeoJSON(coverHashes)
+    document.getElementById('cover-geojson').textContent = JSON.stringify(geojson, null, 2)
+  }
 })
 
 function startDrawing() {
@@ -270,11 +439,8 @@ function finishPolygon() {
   coverPolygon = coverVertices.map(ll => [ll.lng, ll.lat])
   coverPolygon.push([...coverPolygon[0]])
 
-  // Clear drawing artifacts and render coverage
   layers.cover.clearLayers()
-  if (coverPolyline) {
-    coverPolyline = null
-  }
+  coverPolyline = null
 
   // Draw the polygon outline
   L.polygon(coverVertices, {
@@ -291,47 +457,88 @@ function renderCover() {
   const maxCells = parseInt(coverMaxCells.value)
   const mergeThreshold = parseFloat(coverMerge.value)
 
-  let hashes
   try {
-    hashes = polygonToGeohashes(coverPolygon, { maxCells, mergeThreshold })
+    coverHashes = polygonToGeohashes(coverPolygon, { maxCells, mergeThreshold })
   } catch (err) {
     document.getElementById('cover-info').classList.remove('hidden')
     document.getElementById('cover-count').textContent = `Error: ${err.message}`
     document.getElementById('cover-range').textContent = '\u2014'
+    document.getElementById('cover-dedup').textContent = '\u2014'
     document.getElementById('cover-code').innerHTML = ''
     return
   }
 
+  // Dedup stats
+  const deduped = deduplicateGeohashes(coverHashes)
+  const dedupLossy = deduplicateGeohashes(coverHashes, { lossy: true })
+
   // Precision range
-  const precisions = hashes.map(h => h.length)
+  const precisions = coverHashes.map(h => h.length)
   const minP = Math.min(...precisions)
   const maxP = Math.max(...precisions)
 
   // Update panel
   document.getElementById('cover-info').classList.remove('hidden')
-  document.getElementById('cover-count').textContent = `${hashes.length} cells`
+  document.getElementById('cover-count').textContent = `${coverHashes.length} cells`
+  document.getElementById('cover-dedup').textContent =
+    `${deduped.length} exact · ${dedupLossy.length} lossy`
   document.getElementById('cover-range').textContent = minP === maxP ? `${minP}` : `${minP}\u2013${maxP}`
 
   const polyStr = coverPolygon.slice(0, 3).map(p => `[${p[0].toFixed(2)}, ${p[1].toFixed(2)}]`).join(', ')
   document.getElementById('cover-code').innerHTML = codeSnippet([
-    `import { polygonToGeohashes } from 'geohash-kit'`,
+    `import { polygonToGeohashes, deduplicateGeohashes,`,
+    `         geohashesToGeoJSON, geohashesToConvexHull } from 'geohash-kit'`,
     ``,
     `const hashes = polygonToGeohashes(`,
     `  [${polyStr}, ...],`,
     `  { maxCells: ${maxCells}, mergeThreshold: ${mergeThreshold} }`,
     `)`,
-    `// ${hashes.length} cells (precision ${minP === maxP ? minP : minP + '\u2013' + maxP})`,
+    `// ${coverHashes.length} cells (precision ${minP === maxP ? minP : minP + '\u2013' + maxP})`,
+    ``,
+    `deduplicateGeohashes(hashes) // ${deduped.length} cells`,
+    `deduplicateGeohashes(hashes, { lossy: true }) // ${dedupLossy.length} cells`,
+    ``,
+    `geohashesToGeoJSON(hashes) // GeoJSON FeatureCollection`,
+    `geohashesToConvexHull(hashes) // [[lon, lat], ...]`,
   ])
 
-  // Draw coverage cells (keep existing polygon outline, add cells underneath)
-  // Remove old cells but keep the polygon outline (first layer)
-  const existingLayers = []
+  // Update GeoJSON panel if visible
+  if (showGeoJSON) {
+    const geojson = geohashesToGeoJSON(coverHashes)
+    document.getElementById('cover-geojson').textContent = JSON.stringify(geojson, null, 2)
+  }
+
+  renderCoverLayers()
+}
+
+function renderCoverLayers() {
+  // Keep the polygon outline, redraw everything else
+  const polygonOutlines = []
   layers.cover.eachLayer(l => {
-    if (l instanceof L.Polygon && !(l instanceof L.Rectangle)) existingLayers.push(l)
+    if (l instanceof L.Polygon && !(l instanceof L.Rectangle)) polygonOutlines.push(l)
   })
   layers.cover.clearLayers()
-  existingLayers.forEach(l => layers.cover.addLayer(l))
-  hashes.forEach(h => drawCell(layers.cover, h))
+  polygonOutlines.forEach(l => layers.cover.addLayer(l))
+
+  // Draw coverage cells
+  if (coverHashes) {
+    coverHashes.forEach(h => drawCell(layers.cover, h))
+  }
+
+  // Draw convex hull if toggled
+  if (showHull && coverHashes) {
+    const hull = geohashesToConvexHull(coverHashes)
+    if (hull.length >= 3) {
+      const hullLatLngs = hull.map(p => [p[1], p[0]]) // [lon, lat] → [lat, lon]
+      L.polygon(hullLatLngs, {
+        color: '#ff00ff',
+        fillColor: '#ff00ff',
+        fillOpacity: 0.08,
+        weight: 3,
+        dashArray: '8, 6',
+      }).addTo(layers.cover)
+    }
+  }
 }
 
 // =====================================================
@@ -368,7 +575,13 @@ function renderNostr() {
   const hash = encode(lat, lon)
   const ladder = createGTagLadder(hash)
   const filter = createGTagFilter(lat, lon, radius)
+  const nearby = nearbyFilter(lat, lon, { precision: hash.length, rings: ringCount })
   const rings = expandRings(hash, ringCount)
+
+  // Mock event tags for parseGTags/bestGeohash demo
+  const mockTags = ladder.map(t => ['g', t[1]])
+  const parsed = parseGTags(mockTags)
+  const best = bestGeohash(mockTags)
 
   // Update panel
   document.getElementById('nostr-info').classList.remove('hidden')
@@ -379,14 +592,29 @@ function renderNostr() {
   document.getElementById('nostr-filter').innerHTML =
     JSON.stringify(filter, null, 2)
 
+  document.getElementById('nostr-nearby').innerHTML =
+    JSON.stringify(nearby, null, 2)
+
+  document.getElementById('nostr-parse').innerHTML = [
+    `parseGTags(tags) → ${parsed.length} tags found`,
+    `bestGeohash(tags) → "${best}"`,
+  ].join('\n')
+
   document.getElementById('nostr-code').innerHTML = codeSnippet([
-    `import { createGTagLadder, createGTagFilter } from 'geohash-kit'`,
+    `import { createGTagLadder, createGTagFilter, nearbyFilter,`,
+    `         expandRings, parseGTags, bestGeohash } from 'geohash-kit'`,
     ``,
     `const ladder = createGTagLadder('${hash}')`,
     `// ${ladder.length} tags from precision 1 to ${hash.length}`,
     ``,
     `const filter = createGTagFilter(${lat.toFixed(4)}, ${lon.toFixed(4)}, ${radius})`,
     `// { '#g': [${filter['#g'].slice(0, 3).map(h => `'${h}'`).join(', ')}, ...] }`,
+    ``,
+    `const nearby = nearbyFilter(${lat.toFixed(4)}, ${lon.toFixed(4)}, { precision: ${hash.length}, rings: ${ringCount} })`,
+    `// { '#g': [...] } — ${nearby['#g'].length} hashes`,
+    ``,
+    `const best = bestGeohash(event.tags) // '${best}'`,
+    `const all = parseGTags(event.tags) // ${parsed.length} tags`,
   ])
 
   // Draw rings

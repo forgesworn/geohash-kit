@@ -35,6 +35,14 @@
       <div class="panel-content" data-panel="explore">
         <h2>Explore</h2>
         <p class="hint">Click anywhere on the map to encode a geohash.</p>
+        <div class="field">
+          <label>Mode</label>
+          <div class="btn-group">
+            <button class="btn btn-sm active" id="explore-mode-encode">Encode</button>
+            <button class="btn btn-sm" id="explore-mode-distance">Distance</button>
+            <button class="btn btn-sm" id="explore-mode-children">Children</button>
+          </div>
+        </div>
         <div id="explore-info" class="hidden">
           <div class="field">
             <label>Geohash</label>
@@ -47,6 +55,10 @@
           <div class="field">
             <label>Error</label>
             <span id="explore-error" class="mono"></span>
+          </div>
+          <div class="field">
+            <label>Cell radius</label>
+            <span id="explore-radius" class="mono"></span>
           </div>
           <div class="field">
             <label>Precision</label>
@@ -64,6 +76,38 @@
           </div>
           <div class="code-block" id="explore-code"></div>
         </div>
+        <!-- Distance mode output -->
+        <div id="explore-distance-info" class="hidden">
+          <div class="field">
+            <label>Point A</label>
+            <span id="distance-hash-a" class="mono"></span>
+          </div>
+          <div class="field">
+            <label>Point B</label>
+            <span id="distance-hash-b" class="mono"></span>
+          </div>
+          <div class="field">
+            <label>Distance</label>
+            <span id="distance-result" class="mono"></span>
+          </div>
+          <div class="field">
+            <label>Contains?</label>
+            <span id="distance-contains" class="mono"></span>
+          </div>
+          <div class="code-block" id="distance-code"></div>
+        </div>
+        <!-- Children mode output -->
+        <div id="explore-children-info" class="hidden">
+          <div class="field">
+            <label>Parent</label>
+            <span id="children-parent" class="mono"></span>
+          </div>
+          <div class="field">
+            <label>Children (32)</label>
+            <div class="code-block" id="children-list"></div>
+          </div>
+          <div class="code-block" id="children-code"></div>
+        </div>
       </div>
 
       <!-- Cover panel -->
@@ -80,6 +124,10 @@
             <span id="cover-count" class="mono"></span>
           </div>
           <div class="field">
+            <label>After dedup</label>
+            <span id="cover-dedup" class="mono"></span>
+          </div>
+          <div class="field">
             <label>Precision range</label>
             <span id="cover-range" class="mono"></span>
           </div>
@@ -92,6 +140,16 @@
             <label>Merge threshold</label>
             <input type="range" id="cover-merge" min="0" max="1" value="0.5" step="0.1" />
             <span id="cover-merge-value" class="mono">0.5</span>
+          </div>
+          <div class="field">
+            <label>Overlays</label>
+            <div class="btn-group">
+              <button class="btn btn-sm" id="cover-toggle-hull">Convex hull</button>
+              <button class="btn btn-sm" id="cover-toggle-geojson">GeoJSON</button>
+            </div>
+          </div>
+          <div id="cover-geojson-wrap" class="hidden">
+            <div class="code-block code-block-scroll" id="cover-geojson"></div>
           </div>
           <div class="code-block" id="cover-code"></div>
         </div>
@@ -108,8 +166,16 @@
             <div class="code-block" id="nostr-ladder"></div>
           </div>
           <div class="field">
-            <label>REQ filter</label>
+            <label>REQ filter (createGTagFilter)</label>
             <div class="code-block" id="nostr-filter"></div>
+          </div>
+          <div class="field">
+            <label>nearbyFilter</label>
+            <div class="code-block" id="nostr-nearby"></div>
+          </div>
+          <div class="field">
+            <label>parseGTags example</label>
+            <div class="code-block" id="nostr-parse"></div>
           </div>
           <div class="field">
             <label>Rings</label>
