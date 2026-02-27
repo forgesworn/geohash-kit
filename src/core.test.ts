@@ -3,6 +3,7 @@ import {
   encode, decode, bounds, children, contains, matchesAny,
   neighbour, neighbours,
   distance, distanceFromCoords, radiusToPrecision, precisionToRadius,
+  midpointFromCoords, midpointFromCoordsMulti, midpoint,
   type GeohashBounds,
 } from './core.js'
 import { expandRings } from './nostr.js'
@@ -337,6 +338,140 @@ describe('distance', () => {
     // Adjacent precision-5 cells should be within ~5km
     expect(d).toBeLessThan(10_000)
     expect(d).toBeGreaterThan(0)
+  })
+})
+
+describe('midpointFromCoords — input validation', () => {
+  it('throws RangeError for NaN coordinate', () => {
+    expect(() => midpointFromCoords(NaN, 0, 0, 0)).toThrow(RangeError)
+    expect(() => midpointFromCoords(0, NaN, 0, 0)).toThrow(RangeError)
+    expect(() => midpointFromCoords(0, 0, NaN, 0)).toThrow(RangeError)
+    expect(() => midpointFromCoords(0, 0, 0, NaN)).toThrow(RangeError)
+  })
+
+  it('throws RangeError for Infinity coordinate', () => {
+    expect(() => midpointFromCoords(Infinity, 0, 0, 0)).toThrow(RangeError)
+    expect(() => midpointFromCoords(0, 0, 0, -Infinity)).toThrow(RangeError)
+  })
+})
+
+describe('midpointFromCoords', () => {
+  it('returns the same point when both inputs are identical', () => {
+    const { lat, lon } = midpointFromCoords(51.5074, -0.1278, 51.5074, -0.1278)
+    expect(lat).toBeCloseTo(51.5074, 4)
+    expect(lon).toBeCloseTo(-0.1278, 4)
+  })
+
+  it('calculates midpoint between London and Paris', () => {
+    // London: 51.5074, -0.1278  Paris: 48.8566, 2.3522
+    // Expected midpoint: approximately (50.19, 1.11) — geographic midpoint on the sphere
+    const { lat, lon } = midpointFromCoords(51.5074, -0.1278, 48.8566, 2.3522)
+    expect(lat).toBeGreaterThan(49.5)
+    expect(lat).toBeLessThan(50.5)
+    expect(lon).toBeGreaterThan(0.5)
+    expect(lon).toBeLessThan(1.5)
+  })
+
+  it('calculates midpoint on the equator', () => {
+    const { lat, lon } = midpointFromCoords(0, 0, 0, 10)
+    expect(lat).toBeCloseTo(0, 4)
+    expect(lon).toBeCloseTo(5, 1)
+  })
+
+  it('handles antimeridian crossing', () => {
+    // Points on either side of the antimeridian
+    const { lat, lon } = midpointFromCoords(0, 170, 0, -170)
+    expect(lat).toBeCloseTo(0, 1)
+    // Midpoint should be near 180/-180, not near 0
+    expect(Math.abs(lon)).toBeGreaterThan(170)
+  })
+
+  it('handles north-south midpoint along a meridian', () => {
+    const { lat, lon } = midpointFromCoords(60, 10, 20, 10)
+    expect(lat).toBeCloseTo(40, 0)
+    expect(lon).toBeCloseTo(10, 1)
+  })
+})
+
+describe('midpointFromCoordsMulti — input validation', () => {
+  it('throws RangeError for empty array', () => {
+    expect(() => midpointFromCoordsMulti([])).toThrow(RangeError)
+  })
+
+  it('throws RangeError for NaN in any point', () => {
+    expect(() => midpointFromCoordsMulti([{ lat: NaN, lon: 0 }])).toThrow(RangeError)
+    expect(() => midpointFromCoordsMulti([{ lat: 0, lon: 0 }, { lat: 0, lon: NaN }])).toThrow(RangeError)
+  })
+
+  it('throws RangeError for Infinity in any point', () => {
+    expect(() => midpointFromCoordsMulti([{ lat: Infinity, lon: 0 }])).toThrow(RangeError)
+  })
+})
+
+describe('midpointFromCoordsMulti', () => {
+  it('returns the point itself for a single-element array', () => {
+    const { lat, lon } = midpointFromCoordsMulti([{ lat: 51.5074, lon: -0.1278 }])
+    expect(lat).toBeCloseTo(51.5074, 4)
+    expect(lon).toBeCloseTo(-0.1278, 4)
+  })
+
+  it('matches midpointFromCoords for two points', () => {
+    const twoPoint = midpointFromCoords(51.5074, -0.1278, 48.8566, 2.3522)
+    const multi = midpointFromCoordsMulti([
+      { lat: 51.5074, lon: -0.1278 },
+      { lat: 48.8566, lon: 2.3522 },
+    ])
+    expect(multi.lat).toBeCloseTo(twoPoint.lat, 4)
+    expect(multi.lon).toBeCloseTo(twoPoint.lon, 4)
+  })
+
+  it('calculates centroid of three UK cities', () => {
+    // London: 51.5074, -0.1278  Manchester: 53.4808, -2.2426  Edinburgh: 55.9533, -3.1883
+    const { lat, lon } = midpointFromCoordsMulti([
+      { lat: 51.5074, lon: -0.1278 },
+      { lat: 53.4808, lon: -2.2426 },
+      { lat: 55.9533, lon: -3.1883 },
+    ])
+    // Centroid should be roughly in the middle of these three
+    expect(lat).toBeGreaterThan(53)
+    expect(lat).toBeLessThan(54)
+    expect(lon).toBeGreaterThan(-2.5)
+    expect(lon).toBeLessThan(-1)
+  })
+
+  it('handles antimeridian crossing with multiple points', () => {
+    const { lat, lon } = midpointFromCoordsMulti([
+      { lat: 0, lon: 170 },
+      { lat: 0, lon: -170 },
+    ])
+    expect(lat).toBeCloseTo(0, 1)
+    expect(Math.abs(lon)).toBeGreaterThan(170)
+  })
+})
+
+describe('midpoint', () => {
+  it('returns midpoint between two geohash cell centres', () => {
+    // gcpvj = London area, u09tu = Paris area
+    const { lat, lon } = midpoint('gcpvj', 'u09tu')
+    expect(lat).toBeGreaterThan(49)
+    expect(lat).toBeLessThan(51)
+    expect(lon).toBeGreaterThan(0)
+    expect(lon).toBeLessThan(2)
+  })
+
+  it('returns the cell centre for same geohash', () => {
+    const decoded = decode('gcpvj')
+    const { lat, lon } = midpoint('gcpvj', 'gcpvj')
+    expect(lat).toBeCloseTo(decoded.lat, 4)
+    expect(lon).toBeCloseTo(decoded.lon, 4)
+  })
+
+  it('returns midpoint between adjacent cells', () => {
+    const n = neighbour('gcpvj', 'n')
+    const { lat, lon } = midpoint('gcpvj', n)
+    const aBounds = bounds('gcpvj')
+    // Midpoint latitude should be near the shared boundary
+    expect(lat).toBeCloseTo(aBounds.maxLat, 1)
   })
 })
 

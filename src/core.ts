@@ -182,6 +182,83 @@ export function distance(hashA: string, hashB: string): number {
   return distanceFromCoords(a.lat, a.lon, b.lat, b.lon)
 }
 
+// --- Midpoint ---
+
+/** Geographic midpoint between two coordinate pairs (spherical interpolation). */
+export function midpointFromCoords(
+  lat1: number, lon1: number, lat2: number, lon2: number,
+): { lat: number; lon: number } {
+  if (!Number.isFinite(lat1) || !Number.isFinite(lon1) || !Number.isFinite(lat2) || !Number.isFinite(lon2)) {
+    throw new RangeError('All coordinate arguments must be finite numbers')
+  }
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const toDeg = (rad: number) => (rad * 180) / Math.PI
+
+  const φ1 = toRad(lat1)
+  const λ1 = toRad(lon1)
+  const φ2 = toRad(lat2)
+  const λ2 = toRad(lon2)
+
+  // Convert to Cartesian, average, convert back
+  const x1 = Math.cos(φ1) * Math.cos(λ1)
+  const y1 = Math.cos(φ1) * Math.sin(λ1)
+  const z1 = Math.sin(φ1)
+
+  const x2 = Math.cos(φ2) * Math.cos(λ2)
+  const y2 = Math.cos(φ2) * Math.sin(λ2)
+  const z2 = Math.sin(φ2)
+
+  const x = (x1 + x2) / 2
+  const y = (y1 + y2) / 2
+  const z = (z1 + z2) / 2
+
+  const lon = toDeg(Math.atan2(y, x))
+  const hyp = Math.sqrt(x * x + y * y)
+  const lat = toDeg(Math.atan2(z, hyp))
+
+  return { lat, lon }
+}
+
+/** Geographic centroid of N coordinate pairs (spherical vector mean). */
+export function midpointFromCoordsMulti(
+  points: ReadonlyArray<{ lat: number; lon: number }>,
+): { lat: number; lon: number } {
+  if (points.length === 0) throw new RangeError('Points array must not be empty')
+
+  const toRad = (deg: number) => (deg * Math.PI) / 180
+  const toDeg = (rad: number) => (rad * 180) / Math.PI
+
+  let x = 0, y = 0, z = 0
+
+  for (const p of points) {
+    if (!Number.isFinite(p.lat) || !Number.isFinite(p.lon)) {
+      throw new RangeError('All coordinate values must be finite numbers')
+    }
+    const φ = toRad(p.lat)
+    const λ = toRad(p.lon)
+    x += Math.cos(φ) * Math.cos(λ)
+    y += Math.cos(φ) * Math.sin(λ)
+    z += Math.sin(φ)
+  }
+
+  x /= points.length
+  y /= points.length
+  z /= points.length
+
+  const lon = toDeg(Math.atan2(y, x))
+  const hyp = Math.sqrt(x * x + y * y)
+  const lat = toDeg(Math.atan2(z, hyp))
+
+  return { lat, lon }
+}
+
+/** Geographic midpoint between centres of two geohash cells. */
+export function midpoint(hashA: string, hashB: string): { lat: number; lon: number } {
+  const a = decode(hashA)
+  const b = decode(hashB)
+  return midpointFromCoords(a.lat, a.lon, b.lat, b.lon)
+}
+
 // --- Precision ↔ Radius ---
 
 // Approximate cell half-diagonal in metres at each precision level (equator).
