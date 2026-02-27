@@ -1,4 +1,4 @@
-// geohash-kit/coverage — polygon-to-geohash coverage, GeoJSON, convex hull, circle approximation
+// geohash-kit/coverage — polygon-to-geohash coverage, GeoJSON, convex hull
 
 import { bounds as geohashBounds, children as geohashChildren } from './core.js'
 import type { GeohashBounds } from './core.js'
@@ -655,87 +655,4 @@ export function geohashesToGeoJSON(hashes: string[]): GeohashGeoJSON {
       }
     }),
   }
-}
-
-// --- circleToPolygon — geodesic circle approximation ---
-
-const EARTH_RADIUS_METRES = 6_371_008.8
-
-/**
- * Compute the destination point given a start [lon, lat], distance in metres,
- * and bearing in degrees (0 = north, 90 = east). Uses the Haversine formula.
- */
-export function getDestinationPoint(
-  start: [number, number],
-  distanceMetres: number,
-  bearingDeg: number,
-): [number, number] {
-  if (!Number.isFinite(start[0]) || !Number.isFinite(start[1])) {
-    throw new RangeError(`Invalid start coordinate: [${start[0]}, ${start[1]}]`)
-  }
-  if (!Number.isFinite(distanceMetres) || distanceMetres < 0) {
-    throw new RangeError(`Invalid distance: ${distanceMetres}`)
-  }
-  if (!Number.isFinite(bearingDeg)) {
-    throw new RangeError(`Invalid bearing: ${bearingDeg}`)
-  }
-
-  const toRad = (deg: number) => (deg * Math.PI) / 180
-  const toDeg = (rad: number) => (rad * 180) / Math.PI
-
-  const lat1 = toRad(start[1])
-  const lon1 = toRad(start[0])
-  const bearing = toRad(bearingDeg)
-  const angularDist = distanceMetres / EARTH_RADIUS_METRES
-
-  const lat2 = Math.asin(
-    Math.sin(lat1) * Math.cos(angularDist) +
-      Math.cos(lat1) * Math.sin(angularDist) * Math.cos(bearing),
-  )
-  const lon2 =
-    lon1 +
-    Math.atan2(
-      Math.sin(bearing) * Math.sin(angularDist) * Math.cos(lat1),
-      Math.cos(angularDist) - Math.sin(lat1) * Math.sin(lat2),
-    )
-
-  return [toDeg(lon2), toDeg(lat2)]
-}
-
-/**
- * Approximate a circle on the Earth's surface as a GeoJSON Polygon.
- *
- * Uses the Haversine destination-point formula to project `segments` evenly
- * spaced points around the centre at the given radius. Returns a closed
- * GeoJSON Polygon (first coordinate === last coordinate per RFC 7946).
- *
- * @param centre  [lon, lat] of circle centre
- * @param radiusMetres  radius in metres
- * @param segments  number of polygon vertices (default 64)
- * @returns GeoJSON Polygon geometry
- */
-export function circleToPolygon(
-  centre: [number, number],
-  radiusMetres: number,
-  segments = 64,
-): GeoJSONPolygon {
-  if (!Number.isFinite(centre[0]) || !Number.isFinite(centre[1])) {
-    throw new RangeError(`Invalid centre coordinate: [${centre[0]}, ${centre[1]}]`)
-  }
-  if (!Number.isFinite(radiusMetres) || radiusMetres <= 0) {
-    throw new RangeError(`Invalid radius: ${radiusMetres}`)
-  }
-  if (!Number.isFinite(segments) || segments < 3) {
-    throw new RangeError(`Invalid segments: ${segments} (minimum 3)`)
-  }
-
-  const coords: number[][] = []
-  for (let i = 0; i < segments; i++) {
-    const bearingDeg = (360 * i) / segments
-    coords.push(getDestinationPoint(centre, radiusMetres, bearingDeg))
-  }
-  // Close the ring per RFC 7946
-  coords.push(coords[0])
-
-  return { type: 'Polygon', coordinates: [coords] }
 }

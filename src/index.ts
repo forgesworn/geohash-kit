@@ -10,7 +10,7 @@ export {
 export {
   pointInPolygon, boundsOverlapsPolygon, boundsFullyInsidePolygon,
   polygonToGeohashes, geohashesToGeoJSON, geohashesToConvexHull,
-  deduplicateGeohashes, getDestinationPoint, circleToPolygon,
+  deduplicateGeohashes,
   type CoverageOptions, type DeduplicateOptions, type GeohashGeoJSON,
   type PolygonInput, type GeoJSONPolygon, type GeoJSONMultiPolygon,
 } from './coverage.js'

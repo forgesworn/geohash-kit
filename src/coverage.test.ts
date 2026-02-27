@@ -3,7 +3,7 @@ import { bounds, decode, encode } from './core.js'
 import {
   pointInPolygon, boundsOverlapsPolygon, boundsFullyInsidePolygon,
   polygonToGeohashes, geohashesToGeoJSON, geohashesToConvexHull,
-  deduplicateGeohashes, getDestinationPoint, circleToPolygon,
+  deduplicateGeohashes,
 } from './coverage.js'
 import type { GeohashBounds } from './core.js'
 
@@ -828,99 +828,5 @@ describe('deduplicateGeohashes', () => {
     const result = deduplicateGeohashes(kids, { lossy: true })
     expect(result).toHaveLength(29)
     expect(result).not.toContain(parent)
-  })
-})
-
-// --- getDestinationPoint ---
-
-describe('getDestinationPoint', () => {
-  it('returns the same point for zero distance', () => {
-    const [lon, lat] = getDestinationPoint([-1.5, 53.8], 0, 90)
-    expect(lon).toBeCloseTo(-1.5, 8)
-    expect(lat).toBeCloseTo(53.8, 8)
-  })
-
-  it('moves north correctly', () => {
-    const [lon, lat] = getDestinationPoint([0, 0], 1000, 0)
-    expect(lon).toBeCloseTo(0, 4)
-    expect(lat).toBeGreaterThan(0)
-    expect(lat).toBeCloseTo(0.008993, 3)
-  })
-
-  it('moves east correctly', () => {
-    const [lon, lat] = getDestinationPoint([0, 0], 1000, 90)
-    expect(lon).toBeGreaterThan(0)
-    expect(lon).toBeCloseTo(0.008993, 3)
-    expect(lat).toBeCloseTo(0, 4)
-  })
-
-  it('throws on NaN input', () => {
-    expect(() => getDestinationPoint([NaN, 53], 1000, 0)).toThrow(RangeError)
-    expect(() => getDestinationPoint([0, 0], NaN, 0)).toThrow(RangeError)
-    expect(() => getDestinationPoint([0, 0], 1000, NaN)).toThrow(RangeError)
-  })
-
-  it('throws on negative distance', () => {
-    expect(() => getDestinationPoint([0, 0], -100, 0)).toThrow(RangeError)
-  })
-})
-
-// --- circleToPolygon ---
-
-describe('circleToPolygon', () => {
-  it('returns a valid GeoJSON Polygon', () => {
-    const result = circleToPolygon([-1.5, 53.8], 5000)
-    expect(result.type).toBe('Polygon')
-    expect(result.coordinates).toHaveLength(1)
-    const ring = result.coordinates[0]
-    expect(ring.length).toBe(65) // 64 segments + closing vertex
-    expect(ring[0]).toEqual(ring[ring.length - 1])
-  })
-
-  it('produces points at roughly the correct distance', () => {
-    const centre: [number, number] = [-1.5, 53.8]
-    const radiusMetres = 10_000
-    const result = circleToPolygon(centre, radiusMetres, 32)
-    const ring = result.coordinates[0]
-
-    for (let i = 0; i < 32; i += 8) {
-      const [pLon, pLat] = ring[i]
-      const toRad = (d: number) => (d * Math.PI) / 180
-      const dLat = toRad(pLat - centre[1])
-      const dLon = toRad(pLon - centre[0])
-      const a = Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(centre[1])) * Math.cos(toRad(pLat)) * Math.sin(dLon / 2) ** 2
-      const dist = 2 * 6_371_008.8 * Math.asin(Math.sqrt(a))
-      expect(dist).toBeCloseTo(radiusMetres, -2)
-    }
-  })
-
-  it('respects custom segment count', () => {
-    const result = circleToPolygon([0, 0], 1000, 8)
-    expect(result.coordinates[0]).toHaveLength(9)
-  })
-
-  it('can be used as input to polygonToGeohashes', () => {
-    const poly = circleToPolygon([-1.5, 53.8], 5000, 32)
-    const hashes = polygonToGeohashes(poly, { maxPrecision: 4, maxCells: 500 })
-    expect(hashes.length).toBeGreaterThan(0)
-    for (const h of hashes) {
-      expect(h.length).toBeLessThanOrEqual(4)
-    }
-  })
-
-  it('throws on invalid centre', () => {
-    expect(() => circleToPolygon([NaN, 53], 1000)).toThrow(RangeError)
-    expect(() => circleToPolygon([Infinity, 0], 1000)).toThrow(RangeError)
-  })
-
-  it('throws on invalid radius', () => {
-    expect(() => circleToPolygon([0, 0], 0)).toThrow(RangeError)
-    expect(() => circleToPolygon([0, 0], -100)).toThrow(RangeError)
-    expect(() => circleToPolygon([0, 0], NaN)).toThrow(RangeError)
-  })
-
-  it('throws on too few segments', () => {
-    expect(() => circleToPolygon([0, 0], 1000, 2)).toThrow(RangeError)
   })
 })
