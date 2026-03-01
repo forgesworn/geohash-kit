@@ -42,7 +42,14 @@
     "proximity",
     "location",
     "gis",
-    "spatial-index"
+    "spatial-index",
+    "ngeohash",
+    "geofencing",
+    "coordinates",
+    "latitude",
+    "longitude",
+    "mapping",
+    "geo"
   ],
   "author": "TheCryptoDonkey",
   "license": "MIT",

@@ -1,10 +1,10 @@
 # geohash-kit
 
-> Modern TypeScript geohash toolkit — encode, decode, cover polygons, and build Nostr filters.
+> Working with geohashes in TypeScript? Existing libraries are outdated (ngeohash: last published 2018), lack polygon coverage, or pull in heavy dependencies. geohash-kit is a zero-dependency, modern TypeScript geohash toolkit — encode, decode, cover polygons with adaptive multi-precision subdivision, and build Nostr g-tag filters.
 
 Interactive demo: https://thecryptodonkey.github.io/geohash-kit/
 
-Zero dependencies. ESM-only. Three subpath exports.
+ESM-only. Three subpath exports: `geohash-kit/core`, `geohash-kit/coverage`, `geohash-kit/nostr`.
 
 ## Install
 
