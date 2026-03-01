@@ -3,3 +3,5 @@ dist/
 *.tsbuildinfo
 .worktrees/
 docs/plans/
+.env
+.env.*
