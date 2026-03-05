@@ -3,7 +3,7 @@ import { bounds, decode, encode } from './core.js'
 import {
   pointInPolygon, boundsOverlapsPolygon, boundsFullyInsidePolygon,
   polygonToGeohashes, geohashesToGeoJSON, geohashesToConvexHull,
-  deduplicateGeohashes,
+  convexHull, deduplicateGeohashes,
 } from './coverage.js'
 import type { GeohashBounds } from './core.js'
 
@@ -343,6 +343,73 @@ describe('geohashesToGeoJSON', () => {
   it('returns empty collection for empty input', () => {
     const result = geohashesToGeoJSON([])
     expect(result.features).toHaveLength(0)
+  })
+})
+
+describe('convexHull', () => {
+  it('returns empty array for empty input', () => {
+    expect(convexHull([])).toEqual([])
+  })
+
+  it('returns single point as-is', () => {
+    const result = convexHull([[1, 2]])
+    expect(result).toEqual([[1, 2]])
+  })
+
+  it('returns two points as-is', () => {
+    const result = convexHull([[0, 0], [1, 1]])
+    expect(result).toHaveLength(2)
+  })
+
+  it('returns triangle vertices for 3 non-collinear points', () => {
+    const result = convexHull([[0, 0], [4, 0], [2, 3]])
+    expect(result).toHaveLength(3)
+    for (const p of [[0, 0], [4, 0], [2, 3]]) {
+      expect(result).toContainEqual(p)
+    }
+  })
+
+  it('returns 4 vertices for a square', () => {
+    const result = convexHull([[0, 0], [4, 0], [4, 4], [0, 4]])
+    expect(result).toHaveLength(4)
+  })
+
+  it('excludes interior points', () => {
+    const result = convexHull([[0, 0], [4, 0], [4, 4], [0, 4], [2, 2]])
+    expect(result).toHaveLength(4)
+    expect(result).not.toContainEqual([2, 2])
+  })
+
+  it('handles collinear points (returns endpoints)', () => {
+    const result = convexHull([[0, 0], [1, 1], [2, 2], [3, 3]])
+    expect(result).toHaveLength(2)
+    expect(result).toContainEqual([0, 0])
+    expect(result).toContainEqual([3, 3])
+  })
+
+  it('deduplicates identical points', () => {
+    const result = convexHull([[0, 0], [0, 0], [1, 1], [1, 1], [2, 0]])
+    expect(result).toHaveLength(3)
+  })
+
+  it('produces counter-clockwise winding', () => {
+    const hull = convexHull([[0, 0], [4, 0], [4, 3], [0, 3], [2, 1]])
+    for (let i = 0; i < hull.length; i++) {
+      const a = hull[i]
+      const b = hull[(i + 1) % hull.length]
+      const c = hull[(i + 2) % hull.length]
+      const cross = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+      expect(cross).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('handles random point cloud (pentagon shape)', () => {
+    const points: [number, number][] = [
+      [2, 0], [4, 1], [3, 4], [1, 4], [0, 1],
+      [2, 2], [1.5, 1], [2.5, 3],
+    ]
+    const hull = convexHull(points)
+    expect(hull).toHaveLength(5)
   })
 })
 

@@ -511,6 +511,57 @@ function cross2D(o: [number, number], a: [number, number], b: [number, number]):
 }
 
 /**
+ * Compute the convex hull of a set of `[x, y]` points using Andrew's
+ * monotone chain algorithm. O(n log n).
+ *
+ * Returns the hull vertices in counter-clockwise winding order.
+ * Handles edge cases: empty input, single point, two points, collinear
+ * points, and duplicates (automatically deduplicated).
+ */
+export function convexHull(input: [number, number][]): [number, number][] {
+  // Deduplicate
+  const seen = new Set<string>()
+  const points: [number, number][] = []
+  for (const p of input) {
+    const key = `${p[0]},${p[1]}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      points.push(p)
+    }
+  }
+
+  if (points.length <= 2) return points
+
+  // Sort by x then y
+  points.sort((a, b) => a[0] - b[0] || a[1] - b[1])
+
+  // Andrew's monotone chain — lower hull
+  const lower: [number, number][] = []
+  for (const p of points) {
+    while (lower.length >= 2 && cross2D(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
+      lower.pop()
+    }
+    lower.push(p)
+  }
+
+  // Upper hull
+  const upper: [number, number][] = []
+  for (let i = points.length - 1; i >= 0; i--) {
+    const p = points[i]
+    while (upper.length >= 2 && cross2D(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
+      upper.pop()
+    }
+    upper.push(p)
+  }
+
+  // Remove last point of each half because it's repeated
+  lower.pop()
+  upper.pop()
+
+  return [...lower, ...upper]
+}
+
+/**
  * Compute a convex hull polygon from an array of geohash strings.
  * Collects all unique cell corners, then builds the hull using
  * Andrew's monotone chain algorithm.
@@ -556,33 +607,7 @@ export function geohashesToConvexHull(hashes: string[]): [number, number][] {
     )
   }
 
-  // Sort by x then y
-  points.sort((a, b) => a[0] - b[0] || a[1] - b[1])
-
-  // Andrew's monotone chain — lower hull
-  const lower: [number, number][] = []
-  for (const p of points) {
-    while (lower.length >= 2 && cross2D(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
-      lower.pop()
-    }
-    lower.push(p)
-  }
-
-  // Upper hull
-  const upper: [number, number][] = []
-  for (let i = points.length - 1; i >= 0; i--) {
-    const p = points[i]
-    while (upper.length >= 2 && cross2D(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
-      upper.pop()
-    }
-    upper.push(p)
-  }
-
-  // Remove last point of each half because it's repeated
-  lower.pop()
-  upper.pop()
-
-  return [...lower, ...upper]
+  return convexHull(points)
 }
 
 // --- deduplicateGeohashes ---
