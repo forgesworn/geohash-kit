@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/TheCryptoDonkey/geohash-kit/compare/v1.3.0...v1.4.0) (2026-03-05)
+
+
+### Features
+
+* extract convexHull(points) coordinate-based primitive ([96b4179](https://github.com/TheCryptoDonkey/geohash-kit/commit/96b4179cbdb99bc67785e3980cadf870fe49af81))
+
 # [1.3.0](https://github.com/TheCryptoDonkey/geohash-kit/compare/v1.2.0...v1.3.0) (2026-02-27)
 
 
