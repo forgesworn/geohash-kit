@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/TheCryptoDonkey/geohash-kit/compare/v1.4.1...v1.4.2) (2026-03-06)
+
+
+### Bug Fixes
+
+* deduplicate BASE32, tighten tests, update AI discoverability ([d21366b](https://github.com/TheCryptoDonkey/geohash-kit/commit/d21366ba2f3f35d0f32654b7d000e1dcba61fae9))
+
 ## [1.4.1](https://github.com/TheCryptoDonkey/geohash-kit/compare/v1.4.0...v1.4.1) (2026-03-05)
 
 
