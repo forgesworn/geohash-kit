@@ -29,39 +29,11 @@ Zero-dependency TypeScript geohash toolkit.
 
 **Automated via semantic-release** — version bumps and npm publishing happen automatically when you push to `main`.
 
-### Commit Message Types (triggers auto-versioning)
+| Type | Example | Version Bump |
+|------|---------|--------------|
+| `fix:` | `fix: handle edge case in decode` | Patch (1.0.x) |
+| `feat:` | `feat: add new API function` | Minor (1.x.0) |
+| `BREAKING CHANGE:` | In commit body | Major (x.0.0) |
+| `chore:`, `docs:`, `refactor:` | `docs: update README` | None |
 
-Use conventional commits. The `type:` prefix determines the version bump:
-
-| Type | Example | Version Bump | npm Published |
-|------|---------|--------------|---------------|
-| `fix:` | `fix: handle edge case in decode` | Patch (1.0.0 → 1.0.1) | ✅ Yes |
-| `feat:` | `feat: add new API function` | Minor (1.0.0 → 1.1.0) | ✅ Yes |
-| `BREAKING CHANGE:` | In commit body: `BREAKING CHANGE: removed X function` | Major (1.0.0 → 2.0.0) | ✅ Yes |
-| `chore:`, `docs:`, `refactor:` | `docs: update README` | None (no release) | ❌ No |
-
-### Release Workflow
-
-```bash
-# 1. Make changes and commit with conventional message
-git commit -m "feat: add new coverage function"
-
-# 2. Push to main
-git push origin main
-
-# 3. CI automatically:
-#    - Runs tests (must pass)
-#    - Detects version bump from commit message
-#    - Updates package.json version
-#    - Publishes to npm (via Trusted Publishing/OIDC)
-#    - Creates GitHub release with changelog
-#    - Tags commit with version number
-```
-
-### Important Notes
-
-- Tests must pass before release — if any test fails, release is skipped
-- Semantic-release creates version commits and tags automatically
-- No manual version management needed — never edit version numbers
-- GitHub Actions uses Trusted Publishing (OIDC) — no npm tokens required
-- Repository must be **public** for provenance signing to work with npm
+Tests must pass before release. GitHub Actions uses OIDC trusted publishing.
