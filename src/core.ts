@@ -92,12 +92,16 @@ export function children(hash: string): string[] {
 
 /** Check if two geohashes overlap (bidirectional prefix containment). */
 export function contains(a: string, b: string): boolean {
+  validateGeohash(a)
+  validateGeohash(b)
   return a.startsWith(b) || b.startsWith(a)
 }
 
 /** Check if a geohash matches any candidate in a multi-precision set. */
 export function matchesAny(hash: string, candidates: string[]): boolean {
-  return candidates.some(c => contains(hash, c))
+  validateGeohash(hash)
+  for (const c of candidates) validateGeohash(c)
+  return candidates.some(c => hash.startsWith(c) || c.startsWith(hash))
 }
 
 // --- Neighbours ---

@@ -1,12 +1,13 @@
 // geohash-kit/nostr — Nostr g-tag utilities
 
 import { encode, neighbours, radiusToPrecision } from './core.js'
-import { isValidGeohash } from './base32.js'
+import { isValidGeohash, validateGeohash } from './base32.js'
 
 // --- Publishing (event tags) ---
 
 /** Generate multi-precision g-tag ladder for Nostr event publishing. */
 export function createGTagLadder(geohash: string, minPrecision = 1): string[][] {
+  if (geohash.length > 0) validateGeohash(geohash)
   const tags: string[][] = []
   for (let p = Math.max(1, minPrecision); p <= geohash.length; p++) {
     tags.push(['g', geohash.slice(0, p)])
@@ -36,12 +37,14 @@ export function bestGeohash(tags: string[][]): string | undefined {
 
 // --- Ring expansion ---
 
-/** Expand geohash into concentric rings of neighbours. */
+/** Expand geohash into concentric rings of neighbours. Max 10 rings. */
 export function expandRings(hash: string, rings = 1): string[][] {
+  if (!Number.isFinite(rings) || rings < 0) throw new RangeError(`Invalid ring count: ${rings}`)
+  const clampedRings = Math.min(10, Math.round(rings))
   const result: string[][] = [[hash]]
   const seen = new Set([hash])
 
-  for (let ring = 1; ring <= rings; ring++) {
+  for (let ring = 1; ring <= clampedRings; ring++) {
     const prevRing = result[ring - 1]
     const candidates = new Set<string>()
     for (const cell of prevRing) {

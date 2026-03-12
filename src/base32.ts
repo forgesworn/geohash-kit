@@ -2,7 +2,7 @@
 
 export const BASE32 = '0123456789bcdefghjkmnpqrstuvwxyz'
 
-export const BASE32_DECODE: Record<string, number> = {}
+export const BASE32_DECODE: Record<string, number> = Object.create(null) as Record<string, number>
 for (let i = 0; i < BASE32.length; i++) BASE32_DECODE[BASE32[i]] = i
 
 /** Throw TypeError if any character is not a valid base32 geohash character. */

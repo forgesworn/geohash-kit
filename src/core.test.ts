@@ -7,6 +7,7 @@ import {
   type GeohashBounds,
 } from './core.js'
 import { expandRings } from './nostr.js'
+import { BASE32_DECODE, validateGeohash } from './base32.js'
 
 describe('encode — input validation', () => {
   it('throws RangeError for Infinity precision', () => {
@@ -111,6 +112,66 @@ describe('geohash validation', () => {
 
   it('accepts empty string', () => {
     expect(() => bounds('')).not.toThrow()
+  })
+})
+
+describe('prototype pollution hardening', () => {
+  it('BASE32_DECODE has null prototype (no inherited properties)', () => {
+    expect(Object.getPrototypeOf(BASE32_DECODE)).toBeNull()
+  })
+
+  it('rejects characters that match Object.prototype method names', () => {
+    // 'a' and 'l' are not in base32; ensure they don't pass via prototype chain
+    // 'toString' contains 'o' and 'a' which are not valid base32 chars
+    expect(() => validateGeohash('toString')).toThrow(TypeError)
+    expect(() => validateGeohash('constructor')).toThrow(TypeError)
+    expect(() => validateGeohash('hasOwnProperty')).toThrow(TypeError)
+  })
+
+  it('BASE32_DECODE lookup returns undefined for non-base32 characters', () => {
+    expect(BASE32_DECODE['a']).toBeUndefined()
+    expect(BASE32_DECODE['i']).toBeUndefined()
+    expect(BASE32_DECODE['l']).toBeUndefined()
+    expect(BASE32_DECODE['o']).toBeUndefined()
+  })
+})
+
+describe('contains — input validation', () => {
+  it('throws TypeError for invalid characters in first argument', () => {
+    expect(() => contains('GCPVJ', 'gcpvj')).toThrow(TypeError)
+  })
+
+  it('throws TypeError for invalid characters in second argument', () => {
+    expect(() => contains('gcpvj', '!!!')).toThrow(TypeError)
+  })
+
+  it('accepts valid geohashes', () => {
+    expect(() => contains('gcpvj', 'gcpv')).not.toThrow()
+  })
+
+  it('accepts empty strings', () => {
+    expect(contains('', 'gcpvj')).toBe(true)
+    expect(contains('gcpvj', '')).toBe(true)
+  })
+})
+
+describe('matchesAny — input validation', () => {
+  it('throws TypeError for invalid hash', () => {
+    expect(() => matchesAny('INVALID', ['gcpvj'])).toThrow(TypeError)
+  })
+
+  it('throws TypeError for invalid candidate', () => {
+    expect(() => matchesAny('gcpvj', ['!!!'])).toThrow(TypeError)
+  })
+})
+
+describe('decode — input validation', () => {
+  it('throws TypeError for empty geohash', () => {
+    expect(() => decode('')).toThrow(TypeError)
+  })
+
+  it('throws TypeError for invalid characters', () => {
+    expect(() => decode('GCPVJ')).toThrow(TypeError)
   })
 })
 

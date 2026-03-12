@@ -34,6 +34,11 @@ describe('createGTagLadder', () => {
   it('returns empty array for empty string', () => {
     expect(createGTagLadder('')).toEqual([])
   })
+
+  it('throws TypeError for invalid geohash characters', () => {
+    expect(() => createGTagLadder('GCPVJ')).toThrow(TypeError)
+    expect(() => createGTagLadder('gc!vj')).toThrow(TypeError)
+  })
 })
 
 describe('parseGTags', () => {
@@ -74,6 +79,22 @@ describe('bestGeohash', () => {
 
   it('returns undefined for empty tag array', () => {
     expect(bestGeohash([])).toBeUndefined()
+  })
+})
+
+describe('expandRings — input validation', () => {
+  it('throws RangeError for NaN ring count', () => {
+    expect(() => expandRings('gcpvj', NaN)).toThrow(RangeError)
+  })
+
+  it('throws RangeError for negative ring count', () => {
+    expect(() => expandRings('gcpvj', -1)).toThrow(RangeError)
+  })
+
+  it('clamps ring count to 10', () => {
+    const rings = expandRings('gcpvj', 100)
+    // 10 rings + ring 0 = 11 entries
+    expect(rings).toHaveLength(11)
   })
 })
 
