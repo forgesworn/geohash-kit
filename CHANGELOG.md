@@ -1,3 +1,11 @@
+## [1.5.1](https://github.com/TheCryptoDonkey/geohash-kit/compare/v1.5.0...v1.5.1) (2026-03-12)
+
+
+### Bug Fixes
+
+* harden against prototype pollution, add input validation, cap ring expansion ([5297db9](https://github.com/TheCryptoDonkey/geohash-kit/commit/5297db98154935e301957c6a3606b25b43444046))
+* validate geohash input in createGTagFilterFromGeohashes ([844329a](https://github.com/TheCryptoDonkey/geohash-kit/commit/844329a06313b2171b349a749a84a11659e9b7cb))
+
 # [1.5.0](https://github.com/TheCryptoDonkey/geohash-kit/compare/v1.4.2...v1.5.0) (2026-03-09)
 
 
