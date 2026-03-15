@@ -50,7 +50,11 @@
     "latitude",
     "longitude",
     "mapping",
-    "geo"
+    "geo",
+    "encode",
+    "decode",
+    "bounding-box",
+    "point-in-polygon"
   ],
   "author": "TheCryptoDonkey",
   "license": "MIT",
