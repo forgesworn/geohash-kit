@@ -3,12 +3,12 @@
 **The modern TypeScript geohash toolkit — encode, decode, cover polygons, and discover location-based Nostr events.**
 
 [![npm](https://img.shields.io/npm/v/geohash-kit)](https://www.npmjs.com/package/geohash-kit)
-[![licence](https://img.shields.io/npm/l/geohash-kit)](https://github.com/TheCryptoDonkey/geohash-kit/blob/main/LICENSE)
+[![licence](https://img.shields.io/npm/l/geohash-kit)](https://github.com/forgesworn/geohash-kit/blob/main/LICENSE)
 ![zero deps](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-native-blue)
 [![Nostr](https://img.shields.io/badge/Nostr-Zap%20me-purple)](https://primal.net/p/npub1mgvlrnf5hm9yf0n5mf9nqmvarhvxkc6remu5ec3vf8r0txqkuk7su0e7q2)
 
-**[Interactive Demo](https://thecryptodonkey.github.io/geohash-kit/)** — try every API function on a live map.
+**[Interactive Demo](https://forgesworn.github.io/geohash-kit/)** — try every API function on a live map.
 
 ## Why geohash-kit?
 
@@ -258,11 +258,11 @@ See [llms.txt](./llms.txt) for a concise API summary, or [llms-full.txt](./llms-
 
 ## Licence
 
-[MIT](https://github.com/TheCryptoDonkey/geohash-kit/blob/main/LICENSE)
+[MIT](https://github.com/forgesworn/geohash-kit/blob/main/LICENSE)
 
 ## Support
 
-For issues and feature requests, see [GitHub Issues](https://github.com/TheCryptoDonkey/geohash-kit/issues).
+For issues and feature requests, see [GitHub Issues](https://github.com/forgesworn/geohash-kit/issues).
 
 If you find geohash-kit useful, consider sending a tip:
 

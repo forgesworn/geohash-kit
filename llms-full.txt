@@ -4,8 +4,8 @@
 
 Zero dependencies. ESM-only. TypeScript native.
 
-Repository: https://github.com/TheCryptoDonkey/geohash-kit
-Interactive demo: https://thecryptodonkey.github.io/geohash-kit/
+Repository: https://github.com/forgesworn/geohash-kit
+Interactive demo: https://forgesworn.github.io/geohash-kit/
 Licence: MIT
 
 ## Install

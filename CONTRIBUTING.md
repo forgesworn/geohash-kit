@@ -3,7 +3,7 @@
 ## Setup
 
 ```bash
-git clone https://github.com/TheCryptoDonkey/geohash-kit.git
+git clone https://github.com/forgesworn/geohash-kit.git
 cd geohash-kit
 npm install
 ```

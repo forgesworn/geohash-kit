@@ -56,16 +56,16 @@
     "bounding-box",
     "point-in-polygon"
   ],
-  "author": "TheCryptoDonkey",
+  "author": "forgesworn",
   "license": "MIT",
   "sideEffects": false,
   "engines": {
     "node": ">=18"
   },
-  "homepage": "https://thecryptodonkey.github.io/geohash-kit/",
+  "homepage": "https://forgesworn.github.io/geohash-kit/",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TheCryptoDonkey/geohash-kit.git"
+    "url": "git+https://github.com/forgesworn/geohash-kit.git"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
