@@ -1,3 +1,10 @@
+## [1.5.2](https://github.com/forgesworn/geohash-kit/compare/v1.5.1...v1.5.2) (2026-03-18)
+
+
+### Bug Fixes
+
+* repair broken tags and update CHANGELOG URLs after org transfer ([aeab662](https://github.com/forgesworn/geohash-kit/commit/aeab662ab105d11814b96b319f90a9c0d2a45e45))
+
 ## [1.5.1](https://github.com/forgesworn/geohash-kit/compare/v1.5.0...v1.5.1) (2026-03-12)
 
 
