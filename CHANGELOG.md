@@ -1,3 +1,10 @@
+## [1.5.3](https://github.com/forgesworn/geohash-kit/compare/v1.5.2...v1.5.3) (2026-03-20)
+
+
+### Bug Fixes
+
+* correct copyright to TheCryptoDonkey ([8c18561](https://github.com/forgesworn/geohash-kit/commit/8c18561bd2d038f18b34fdeb024cc86e2262b294))
+
 ## [1.5.2](https://github.com/forgesworn/geohash-kit/compare/v1.5.1...v1.5.2) (2026-03-18)
 
 
