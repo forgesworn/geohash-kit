@@ -81,5 +81,9 @@
     "LICENSE",
     "llms.txt",
     "llms-full.txt"
-  ]
+  ],
+  "funding": {
+    "type": "lightning",
+    "url": "lightning:thedonkey@strike.me"
+  }
 }
