@@ -16,6 +16,13 @@ Zero-dependency TypeScript geohash toolkit.
 - `src/nostr.ts` — Nostr g-tag ladders, REQ filters, ring expansion
 - `src/index.ts` — barrel re-export
 
+## Subpath exports
+
+- `geohash-kit` -- full API
+- `geohash-kit/core` -- encode, decode, bounds, neighbours, distance
+- `geohash-kit/coverage` -- polygon coverage, GeoJSON, convex hull
+- `geohash-kit/nostr` -- Nostr g-tag ladders, REQ filters, ring expansion
+
 ## Conventions
 
 - **British English** — neighbour, colour, metre, licence
