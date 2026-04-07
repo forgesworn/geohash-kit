@@ -6,3 +6,6 @@ dist/
 docs/plans/
 .env
 .env.*
+
+# Local AI agent settings
+.claude/
