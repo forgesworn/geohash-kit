@@ -34,6 +34,8 @@ Basic geohash operations: encode, decode, bounds, neighbours, distance.
 ### geohash-kit/coverage
 Polygon-to-geohash coverage with adaptive threshold subdivision.
 
+**Coordinate order:** `polygonToGeohashes` accepts `[longitude, latitude]` pairs (GeoJSON order) — the opposite of `encode(latitude, longitude)`. This is the most common source of bugs when migrating from `encode`.
+
 - polygonToGeohashes(polygon, options?) → multi-precision hash set (accepts [lon,lat][], GeoJSON Polygon, or MultiPolygon)
 - geohashesToGeoJSON(hashes) → GeoJSON FeatureCollection
 - geohashesToConvexHull(hashes) → polygon vertices
@@ -74,6 +76,18 @@ const tags = createGTagLadder(hash) // [['g','g'], ['g','gc'], ['g','gcp'], ['g'
 // Generate Nostr subscription filter
 const filter = createGTagFilter(51.5074, -0.1278, 5000) // { '#g': ['gcpvj', 'gcpvm', ...] }
 ```
+
+## Alternatives
+
+geohash-kit vs the field:
+
+- **ngeohash** (171k/week) — CommonJS, no TypeScript, no polygon coverage, no Nostr, last published 2018. geohash-kit is a drop-in ESM replacement.
+- **geohashing** (7k/week) — TypeScript, but no polygon coverage, no Nostr g-tags.
+- **latlon-geohash** (19k/week) — no TypeScript native, no polygon, no Nostr.
+- **geohash-poly / shape2geohash** — single-precision brute-force polygon coverage only; no TypeScript, no Nostr.
+- **nostr-geotags** — generates Nostr geo tags but no geohash maths, no polygon coverage.
+
+geohash-kit is the only library combining TypeScript-native types, adaptive multi-precision polygon coverage, Nostr g-tag primitives, and zero runtime dependencies.
 
 ## Optional
 

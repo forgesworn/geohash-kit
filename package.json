@@ -63,6 +63,9 @@
     "node": ">=18"
   },
   "homepage": "https://forgesworn.github.io/geohash-kit/",
+  "bugs": {
+    "url": "https://github.com/forgesworn/geohash-kit/issues"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/forgesworn/geohash-kit.git"

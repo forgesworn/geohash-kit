@@ -1,4 +1,6 @@
 {
   "url": "https://context7.com/forgesworn/geohash-kit",
-  "public_key": "pk_vdoXns3QEblb1693KnlDH"
+  "public_key": "pk_vdoXns3QEblb1693KnlDH",
+  "title": "geohash-kit",
+  "description": "Zero-dependency TypeScript geohash toolkit — encode, decode, adaptive polygon coverage, and Nostr g-tag filters. Drop-in ESM replacement for ngeohash."
 }
