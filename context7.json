@@ -1,10 +1,4 @@
 {
-  "projectTitle": "geohash-kit",
-  "description": "Modern TypeScript geohash toolkit — encode, decode, cover polygons, and build Nostr filters. Zero dependencies.",
-  "excludeFolders": ["node_modules", "dist", "coverage", "src", "scripts", "vectors", ".github", ".changeset"],
-  "rules": [
-    "geohash-kit uses [lng, lat] coordinate order (GeoJSON standard), not [lat, lng].",
-    "All functions are tree-shakeable ESM exports — import only what you need.",
-    "Use coverPolygon() for area-based Nostr relay queries with g-tags."
-  ]
+  "url": "https://context7.com/forgesworn/geohash-kit",
+  "public_key": "pk_vdoXns3QEblb1693KnlDH"
 }
