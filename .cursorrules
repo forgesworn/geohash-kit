@@ -1,0 +1,44 @@
+# Cursor Rules — geohash-kit
+
+Zero-dependency TypeScript geohash toolkit — encode, decode, polygon coverage, Nostr filters.
+
+## Commands
+
+- `npm run build` — compile TypeScript to dist/
+- `npm test` — run Vitest suite
+- `npm run typecheck` — type-check without emitting
+- `npm run vectors:check` — validate vector fixtures
+
+## Conventions
+
+- British English — neighbour, colour, metre, licence
+- Zero runtime dependencies — no new deps without explicit approval
+- ESM-only — `"type": "module"`, maintain ESM-compatible imports
+- TDD — write failing test first, then implement
+- Commits: `type: description` format (fix/feat/docs/refactor/chore)
+- No `Co-Authored-By` lines in commits
+- Do not edit `dist/` by hand
+
+## Key Patterns
+
+- `encode(lat, lon, precision)` — lat first, lon second
+- GeoJSON polygons use `[lon, lat]` vertex order (GeoJSON spec) — opposite to encode
+- `pointInPolygon` and coverage functions take `[x, y]` = `[lon, lat]` pairs
+- `PolygonInput` accepts `[lon, lat][]` or a GeoJSON Polygon/MultiPolygon
+- `decode` returns `{ lat, lon, error }` — not an array
+- `bounds` returns `{ minLat, maxLat, minLon, maxLon }` — named fields
+- Precision 1–9 supported; default 5 (~4.9 km); max clamped at 12
+
+## Structure
+
+- `src/core.ts` — encode, decode, bounds, neighbours, distance, midpoint, precision helpers
+- `src/coverage.ts` — polygon coverage, GeoJSON output, convex hull
+- `src/nostr.ts` — Nostr g-tag ladders, REQ filters, ring expansion
+- `src/index.ts` — barrel re-export
+
+## Subpath exports
+
+- `geohash-kit` — full API
+- `geohash-kit/core` — encode, decode, bounds, neighbours, distance
+- `geohash-kit/coverage` — polygon coverage, GeoJSON, convex hull
+- `geohash-kit/nostr` — Nostr g-tag ladders, REQ filters, ring expansion
