@@ -248,6 +248,16 @@ Performance summary:
 
 For detailed performance analysis, device comparisons, and optimization guidance, see [docs/BENCHMARKS.md](./docs/BENCHMARKS.md).
 
+## Runtime Compatibility
+
+geohash-kit is pure ESM with zero dependencies and no Node.js-specific APIs. It works in:
+
+- **Node.js** 18+ (supported, tested in CI)
+- **Deno** — import from npm: `import { encode } from 'npm:geohash-kit'`
+- **Bun** — works out of the box: `import { encode } from 'geohash-kit'`
+- **Browsers** — bundler-compatible (Vite, esbuild, Rollup, webpack 5)
+- **Cloudflare Workers** — ESM-compatible, no filesystem or network calls
+
 ## Android Compatibility
 
 For Kotlin/Android parity implementations, use the compatibility contract and versioned vectors:
@@ -275,6 +285,7 @@ See [llms.txt](./llms.txt) for a concise API summary, or [llms-full.txt](./llms-
 | [geohash-kit](https://github.com/forgesworn/geohash-kit) | Geohash toolkit with polygon coverage |
 | [nostr-attestations](https://github.com/forgesworn/nostr-attestations) | NIP-VA verifiable attestations |
 | [dominion](https://github.com/forgesworn/dominion) | Epoch-based encrypted access control |
+| [rendezvous-kit](https://github.com/forgesworn/rendezvous-kit) | Fair meeting point discovery using isochrones |
 | [nostr-veil](https://github.com/forgesworn/nostr-veil) | Privacy-preserving Web of Trust |
 
 ## Licence
