@@ -71,7 +71,7 @@
     "url": "git+https://github.com/forgesworn/geohash-kit.git"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
+    "typescript": "^6.0.2",
     "vitest": "^4.1.0"
   },
   "publishConfig": {
