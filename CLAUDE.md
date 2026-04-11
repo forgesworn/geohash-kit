@@ -34,13 +34,24 @@ Zero-dependency TypeScript geohash toolkit.
 
 ## Release & Versioning
 
-**Automated via semantic-release** — version bumps and npm publishing happen automatically when you push to `main`.
+**Via [forgesworn/release-action](https://github.com/forgesworn/release-action).** Version bumps are manual; npm publishing is automatic once a GitHub Release is created for the version tag.
 
-| Type | Example | Version Bump |
-|------|---------|--------------|
-| `fix:` | `fix: handle edge case in decode` | Patch (1.0.x) |
-| `feat:` | `feat: add new API function` | Minor (1.x.0) |
-| `BREAKING CHANGE:` | In commit body | Major (x.0.0) |
-| `chore:`, `docs:`, `refactor:` | `docs: update README` | None |
+Release flow:
 
-Tests must pass before release. GitHub Actions uses OIDC trusted publishing.
+1. Bump `package.json` version by hand (e.g. `1.5.3` → `1.6.0`)
+2. Add a `CHANGELOG.md` entry under the new version heading
+3. Commit (`chore: release 1.6.0`), push main
+4. Tag the commit (`git tag v1.6.0 && git push --tags`)
+5. Create a GitHub Release pointing at the tag (placeholder body is fine — the workflow replaces it from CHANGELOG)
+6. The release workflow runs pre-publish gates (tag match, secret scan, exports sanity, frozen vectors, runtime audit) and publishes to npm with SLSA provenance via OIDC trusted publishing
+
+Semver rules of thumb:
+
+| Change | Bump |
+|---|---|
+| Bug fix, no API change | Patch (1.6.x) |
+| New feature, backwards compatible | Minor (1.x.0) |
+| Breaking API change | Major (x.0.0) |
+| Tooling, docs, refactor with no behaviour change | Patch or none |
+
+The frozen-vector gate (`npm run vectors:check`) is now a hard pre-publish blocker instead of a CI-only check. A drift in encoded output will refuse the publish until either the vectors or the implementation are explicitly updated.

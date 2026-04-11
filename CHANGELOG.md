@@ -1,3 +1,17 @@
+# [1.6.0](https://github.com/forgesworn/geohash-kit/compare/v1.5.3...v1.6.0) (2026-04-11)
+
+
+### Changed
+
+* migrate release tooling from `semantic-release` to [`forgesworn/release-action`](https://github.com/forgesworn/release-action). Removes hundreds of transitive devDependencies, hardens the pre-publish path with gated secret scanning, exports-map verification, frozen-vector gating, and runtime-only `npm audit`, and replaces the workflow-env `NPM_CONFIG_PROVENANCE=true` pattern (fragile on npm 11.6+) with `publishConfig.provenance: true` in `package.json`. No runtime or API changes for consumers.
+
+
+### Why
+
+`semantic-release`'s bundled `npm` CLI brings chronic Dependabot noise that does not affect published artefacts, and its transitive devDependency graph is large enough to conflict with the supply-chain posture a cryptography-adjacent library should hold itself to. The replacement is a pure-bash release tool with hard pre-publish gates. The existing frozen-vector check (`npm run vectors:check`) is now a release-blocking gate rather than a CI-only check — a drift in encoded output will refuse the publish until either the vectors or the implementation are explicitly updated.
+
+`geohash-kit` is the second consumer of `forgesworn/release-action` after `nsec-tree@1.5.0`. This migration validates that the pattern generalises beyond a single library.
+
 ## [1.5.3](https://github.com/forgesworn/geohash-kit/compare/v1.5.2...v1.5.3) (2026-03-20)
 
 

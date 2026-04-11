@@ -1,6 +1,6 @@
 {
   "name": "geohash-kit",
-  "version": "1.5.3",
+  "version": "1.6.0",
   "description": "Modern TypeScript geohash toolkit — encode, decode, cover polygons, and build Nostr filters",
   "type": "module",
   "main": "./dist/index.js",
@@ -71,13 +71,11 @@
     "url": "git+https://github.com/forgesworn/geohash-kit.git"
   },
   "devDependencies": {
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/git": "^10.0.1",
-    "@semantic-release/github": "^12.0.6",
-    "@semantic-release/npm": "^13.1.5",
-    "semantic-release": "^25.0.3",
     "typescript": "^5.7.0",
     "vitest": "^4.1.0"
+  },
+  "publishConfig": {
+    "provenance": true
   },
   "files": [
     "dist",
