@@ -9,6 +9,7 @@
 ![zero deps](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-native-blue)
 [![Nostr](https://img.shields.io/badge/Nostr-Zap%20me-purple)](https://primal.net/p/npub1mgvlrnf5hm9yf0n5mf9nqmvarhvxkc6remu5ec3vf8r0txqkuk7su0e7q2)
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/TheCryptoDonkey?logo=githubsponsors&color=ea4aaa&label=Sponsor)](https://github.com/sponsors/TheCryptoDonkey)
 
 **[Interactive Demo](https://forgesworn.github.io/geohash-kit/)** — try every API function on a live map.
 
