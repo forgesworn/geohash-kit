@@ -34,7 +34,7 @@ Zero-dependency TypeScript geohash toolkit.
 
 ## Release & Versioning
 
-**Via [forgesworn/release-action](https://github.com/forgesworn/release-action).** Version bumps are manual; npm publishing is automatic once a GitHub Release is created for the version tag.
+**Via [forgesworn/anvil](https://github.com/forgesworn/anvil).** Version bumps are manual; npm publishing is automatic once a GitHub Release is created for the version tag.
 
 Release flow:
 
