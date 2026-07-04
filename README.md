@@ -299,5 +299,5 @@ For issues and feature requests, see [GitHub Issues](https://github.com/forgeswo
 
 If you find geohash-kit useful, consider sending a tip:
 
-- **Lightning:** `thedonkey@strike.me`
+- **Lightning:** `profusemeat89@walletofsatoshi.com`
 - **Nostr zaps:** `npub1mgvlrnf5hm9yf0n5mf9nqmvarhvxkc6remu5ec3vf8r0txqkuk7su0e7q2`
