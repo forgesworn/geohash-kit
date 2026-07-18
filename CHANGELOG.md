@@ -1,3 +1,11 @@
+# [1.6.1](https://github.com/forgesworn/geohash-kit/compare/v1.6.0...v1.6.1) (2026-07-18)
+
+
+### Bug Fixes
+
+* publish a uniquely versioned canonical artefact containing the existing prototype-pollution hardening, replacing a stale third-party snapshot that incorrectly claimed version 1.6.0
+
+
 # [1.6.0](https://github.com/forgesworn/geohash-kit/compare/v1.5.3...v1.6.0) (2026-04-11)
 
 
