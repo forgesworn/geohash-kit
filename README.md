@@ -15,7 +15,7 @@
 
 ## Why geohash-kit?
 
-- **Modern TypeScript** — native types, ESM-only, tree-shakeable subpath exports. Zero dependencies. A drop-in replacement for `ngeohash`.
+- **Modern TypeScript**: native types, ESM-only, tree-shakeable subpath exports. Zero dependencies. A modern alternative to `ngeohash` with a different API (names, return shapes and defaults differ; see [Migrating from ngeohash](#migrating-from-ngeohash)).
 - **Smart polygon coverage** — adaptive multi-precision subdivision produces compact geohash sets (coarse interior, fine edges). Other polygon libraries use single-precision brute-force, producing 10-100x more cells for the same area.
 - **Production-hardened** — input validation on all public APIs, RangeError on invalid/infeasible parameters, 736 tests including fuzz and property-based suites.
 - **Nostr-native** — generates multi-precision `g`-tag ladders for publishing and location-based `#g` filter arrays for REQ subscriptions. Perfect for building location-based Nostr applications.
@@ -25,6 +25,8 @@
 ```bash
 npm install geohash-kit
 ```
+
+The root entry point `geohash-kit` re-exports the whole API. The subpaths `geohash-kit/core`, `geohash-kit/coverage` and `geohash-kit/nostr` expose the same functions grouped by module, for smaller imports.
 
 ## Quick Start
 
@@ -39,7 +41,7 @@ import {
 const hash = encode(51.5074, -0.1278)  // 'gcpvj'
 
 // Decode back to coordinates
-const { lat, lon, error } = decode(hash)
+const { lat, lon, error } = decode(hash)  // error: { lat, lon }, half the cell's height and width in degrees
 
 // Get adjacent cells
 const adj = neighbours(hash)  // { n, ne, e, se, s, sw, w, nw }
@@ -50,6 +52,7 @@ const d = distance('gcpvj', 'u09tu')  // ~340km (London → Paris)
 // Cover a polygon with geohashes
 // Note: polygon coordinates are [longitude, latitude] (GeoJSON standard)
 // This is the opposite of encode(latitude, longitude)
+// The ring may be open (as here) or closed (as in the donut below)
 const coverage = polygonToGeohashes([
   [-0.15, 51.50], [-0.10, 51.50],
   [-0.10, 51.52], [-0.15, 51.52],
@@ -101,11 +104,12 @@ const tags = createGTagLadder(hash)
 ```typescript
 import { createGTagFilter, nearbyFilter } from 'geohash-kit/nostr'
 
-// From coordinates + radius
+// From coordinates + radius: precision is derived from the radius,
+// and the filter is the matching cell plus one ring of neighbours (up to 9 hashes)
 const filter = createGTagFilter(51.5074, -0.1278, 5000)
 // { '#g': ['gcpvj', ...neighbours] }
 
-// Or with explicit precision and ring count
+// Or with explicit precision and ring count (defaults: precision 5, rings 1)
 const filter2 = nearbyFilter(51.5074, -0.1278, { precision: 4, rings: 2 })
 ```
 
@@ -120,50 +124,71 @@ const all = parseGTags(event.tags)    // [{ geohash, precision }, ...]
 
 ## API Reference
 
+All functions are available from the root `geohash-kit` entry point; the headings show which subpath groups them.
+
 ### `geohash-kit/core`
 
-| Function | Description |
-|----------|-------------|
-| `encode(lat, lon, precision?)` | Encode coordinates to geohash (default precision 5) |
-| `decode(hash)` | Decode to `{ lat, lon, error }` |
-| `bounds(hash)` | Bounding rectangle `{ minLat, maxLat, minLon, maxLon }` |
-| `children(hash)` | 32 child geohashes at next precision |
-| `neighbour(hash, direction)` | Single adjacent cell |
-| `neighbours(hash)` | All 8 adjacent cells |
-| `contains(a, b)` | Bidirectional prefix containment |
-| `matchesAny(hash, candidates)` | Match against multi-precision set |
-| `distance(hashA, hashB)` | Haversine distance in metres |
-| `distanceFromCoords(lat1, lon1, lat2, lon2)` | Haversine distance in metres |
-| `radiusToPrecision(metres)` | Optimal precision for search radius |
-| `precisionToRadius(precision)` | Approximate cell radius in metres |
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `encode(lat, lon, precision?)` | `string` | Encode coordinates to a geohash. `precision` defaults to 5 (~4.9 km), is rounded to an integer and capped at 12; throws `RangeError` if it rounds to less than 1 |
+| `decode(hash)` | `{ lat, lon, error }` | Cell centre. `error` is `{ lat: number, lon: number }` in degrees: half the cell's height and width, so the cell spans `lat ± error.lat` and `lon ± error.lon` |
+| `bounds(hash)` | `GeohashBounds` | Bounding rectangle `{ minLat, maxLat, minLon, maxLon }` |
+| `children(hash)` | `string[]` | 32 child geohashes at next precision |
+| `neighbour(hash, direction)` | `string` | Single adjacent cell at the same precision. `direction` is a `Direction` (see below) |
+| `neighbours(hash)` | `Record<Direction, string>` | All 8 adjacent cells, keyed by direction |
+| `contains(a, b)` | `boolean` | Bidirectional prefix containment |
+| `matchesAny(hash, candidates)` | `boolean` | Match against multi-precision set |
+| `distance(hashA, hashB)` | `number` | Haversine distance in metres between cell centres |
+| `distanceFromCoords(lat1, lon1, lat2, lon2)` | `number` | Haversine distance in metres |
+| `midpoint(hashA, hashB)` | `{ lat, lon }` | Geographic midpoint between the centres of two cells |
+| `midpointFromCoords(lat1, lon1, lat2, lon2)` | `{ lat, lon }` | Geographic midpoint between two coordinate pairs |
+| `midpointFromCoordsMulti(points)` | `{ lat, lon }` | Spherical vector mean of N points. `points` is a non-empty `ReadonlyArray<{ lat: number; lon: number }>`; throws `RangeError` if empty |
+| `radiusToPrecision(metres)` | `number` | Precision 1 to 9: the coarsest whose approximate cell radius is no larger than `metres` (9 if `metres` is smaller than all of them) |
+| `precisionToRadius(precision)` | `number` | Approximate cell radius in metres; `precision` is rounded and clamped to 1 to 9 |
+
+**`Direction`:** `'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw'`
 
 ### `geohash-kit/coverage`
 
-| Function | Description |
-|----------|-------------|
-| `polygonToGeohashes(polygon, options?)` | Adaptive threshold polygon coverage; accepts `[lon, lat][]`, GeoJSON `Polygon` (with holes), or `MultiPolygon` |
-| `geohashesToGeoJSON(hashes)` | GeoJSON FeatureCollection for map rendering |
-| `geohashesToConvexHull(hashes)` | Convex hull reconstruction |
-| `deduplicateGeohashes(hashes, options?)` | Remove redundant ancestors; `{ lossy: true }` merges ≥30/32 siblings |
-| `pointInPolygon(point, polygon)` | Ray-casting point-in-polygon test |
-| `boundsOverlapsPolygon(bounds, polygon)` | Bounds–polygon overlap test |
-| `boundsFullyInsidePolygon(bounds, polygon)` | Bounds fully inside polygon test |
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `polygonToGeohashes(polygon, options?)` | `string[]` | Adaptive threshold polygon coverage, sorted. `polygon` is a `PolygonInput`; see [Polygon input](#polygon-input) |
+| `geohashesToGeoJSON(hashes)` | `GeohashGeoJSON` | GeoJSON `FeatureCollection` for map rendering: one rectangular `Polygon` feature per hash, with `properties: { geohash, precision }` |
+| `geohashesToConvexHull(hashes)` | `[number, number][]` | Convex hull of all cell corners as `[lon, lat]` vertices, counter-clockwise. Empty input gives `[]`; throws if the hashes straddle ±180° longitude |
+| `convexHull(points)` | `[number, number][]` | Convex hull of `[x, y]` points (Andrew's monotone chain), counter-clockwise; duplicates removed |
+| `deduplicateGeohashes(hashes, options?)` | `string[]` | Remove redundant ancestors, sorted; `{ lossy: true }` merges ≥30/32 siblings |
+| `pointInPolygon(point, polygon)` | `boolean` | Ray-casting point-in-polygon test. `point` is `[lon, lat]` and `polygon` is `[lon, lat][]` (a plain array, not GeoJSON); the ring closes automatically |
+| `boundsOverlapsPolygon(bounds, polygon)` | `boolean` | Bounds–polygon overlap test. `bounds` is a `GeohashBounds`, `polygon` is `[lon, lat][]` |
+| `boundsFullyInsidePolygon(bounds, polygon)` | `boolean` | Bounds fully inside polygon test. `bounds` is a `GeohashBounds`, `polygon` is `[lon, lat][]` |
 
-**`CoverageOptions`:** `{ minPrecision?, maxPrecision?, maxCells?, mergeThreshold? }`
+**`CoverageOptions`** (all fields optional; non-finite values and `maxCells < 1` throw `RangeError`):
+
+| Field | Default | Meaning |
+|-------|---------|---------|
+| `minPrecision` | 1 | Coarsest precision used when subdividing. Rounded and clamped to 1 to 9 |
+| `maxPrecision` | 9 | Finest precision, used along polygon edges. Rounded, clamped to 1 to 9 and never below `minPrecision` |
+| `maxCells` | 500 | Limit on the result size. If exceeded, `maxPrecision` is stepped down until the result fits; throws `RangeError` if even `minPrecision` does not fit |
+| `mergeThreshold` | 1.0 | Clamped to 0 to 1. At 1.0 interior cells are emitted at `maxPrecision` and only complete 32-sibling sets merge; at 0.0 interior cells are as coarse as `minPrecision` and sets of 24 or more merge |
 
 **`PolygonInput`:** `[number, number][] | GeoJSONPolygon | GeoJSONMultiPolygon`
 
+#### Polygon input
+
+- Vertices are `[longitude, latitude]` (GeoJSON order), the opposite of `encode(lat, lon)`.
+- Rings may be open or closed. The last vertex is joined to the first automatically, so `[A, B, C]` and `[A, B, C, A]` give the same result. For GeoJSON rings a repeated closing vertex is dropped before processing. A ring needs at least three vertices, not counting a closing repeat.
+- For a GeoJSON `Polygon`, the first ring is the outer boundary and any further rings are holes. A `MultiPolygon` is a list of `Polygon` coordinate arrays.
+
 ### `geohash-kit/nostr`
 
-| Function | Description |
-|----------|-------------|
-| `createGTagLadder(geohash, minPrecision?)` | Multi-precision g-tag ladder |
-| `createGTagFilter(lat, lon, radiusMetres)` | REQ filter from coordinates |
-| `createGTagFilterFromGeohashes(hashes)` | REQ filter from hash set |
-| `expandRings(hash, rings?)` | Concentric neighbour rings |
-| `nearbyFilter(lat, lon, options?)` | Encode + expand + filter |
-| `parseGTags(tags)` | Extract g tags from event |
-| `bestGeohash(tags)` | Highest-precision g tag |
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `createGTagLadder(geohash, minPrecision?)` | `string[][]` | One `['g', prefix]` tag per precision from `minPrecision` (default 1) up to the length of `geohash`. Empty if `minPrecision` exceeds that length |
+| `createGTagFilter(lat, lon, radiusMetres)` | `{ '#g': string[] }` | REQ filter from coordinates. Precision is `radiusToPrecision(radiusMetres)` and the ring count is fixed at 1, so the filter holds the cell containing the point plus its neighbours (up to 9 hashes). This approximates the radius and does not guarantee to cover all of it; use `nearbyFilter` for wider coverage |
+| `createGTagFilterFromGeohashes(hashes)` | `{ '#g': string[] }` | REQ filter from hash set (validated and de-duplicated) |
+| `expandRings(hash, rings?)` | `string[][]` | Concentric neighbour rings: index 0 is `[hash]` and index `n` is ring `n`. `rings` defaults to 1, is rounded and capped at 10; `0` gives `[[hash]]`; negative or non-finite throws `RangeError` |
+| `nearbyFilter(lat, lon, options?)` | `{ '#g': string[] }` | Encode + expand + filter. `options` is `{ precision?, rings? }` with defaults `precision` 5 and `rings` 1 (up to 9 hashes) |
+| `parseGTags(tags)` | `{ geohash: string; precision: number }[]` | Extract g tags from event; invalid geohashes are dropped |
+| `bestGeohash(tags)` | `string`, or `undefined` if none | Highest-precision g tag |
 
 ## Polygon Coverage Algorithm
 
@@ -203,7 +228,7 @@ const all = parseGTags(event.tags)    // [{ geohash, precision }, ...]
 
 ## Migrating from ngeohash
 
-geohash-kit is a modern TypeScript replacement for [ngeohash](https://github.com/sunng87/node-geohash).
+geohash-kit is a modern TypeScript alternative to [ngeohash](https://github.com/sunng87/node-geohash). It is not a drop-in replacement: names, return shapes and defaults differ, as listed below.
 
 **Import change:**
 
@@ -219,20 +244,40 @@ import { encode, decode, bounds, neighbours } from 'geohash-kit'
 
 | ngeohash | geohash-kit | Notes |
 |----------|-------------|-------|
-| `encode(lat, lon, precision?)` | `encode(lat, lon, precision?)` | Same signature |
-| `decode(hash)` | `decode(hash)` | Returns `{ lat, lon, error }` instead of `{ latitude, longitude, error }` |
+| `encode(lat, lon, precision?)` | `encode(lat, lon, precision?)` | Same argument order, but the default precision differs: ngeohash 9, geohash-kit 5. Pass `9` explicitly to keep ngeohash's output length |
+| `decode(hash)` | `decode(hash)` | Returns `{ lat, lon, error: { lat, lon } }` instead of `{ latitude, longitude, error: { latitude, longitude } }` |
 | `decode_bbox(hash)` | `bounds(hash)` | Returns `{ minLat, maxLat, minLon, maxLon }` object instead of `[minlat, minlon, maxlat, maxlon]` array |
 | `neighbors(hash)` | `neighbours(hash)` | British spelling; returns `{ n, ne, e, ... }` object instead of array |
 | `neighbor(hash, [latDir, lonDir])` | `neighbour(hash, direction)` | Direction is a string (`'n'`, `'sw'`, etc.) instead of `[1, 0]` array |
-| `bboxes(minLat, minLon, maxLat, maxLon, precision)` | `polygonToGeohashes(polygon)` | More powerful: accepts polygons (not just rectangles), multi-precision output, maxCells budget |
-| `encode_int` / `decode_int` / `*_int` | — | Integer geohash encoding not supported |
+| `bboxes(minLat, minLon, maxLat, maxLon, precision)` | `polygonToGeohashes(polygon, options)` | No direct equivalent: cover the rectangle as a polygon at one fixed precision (example below). Also accepts polygons, multi-precision output and a `maxCells` budget |
+| `encode_int` / `decode_int` / `*_int` | none | Integer geohash encoding not supported |
+
+**Replacing `bboxes`:** `bboxes` returns every cell at one precision that covers a rectangle. Pass the rectangle as a `[lon, lat]` polygon and pin `minPrecision` and `maxPrecision` to the same value:
+
+```typescript
+import { polygonToGeohashes } from 'geohash-kit'
+
+const minLat = 51.50, minLon = -0.15, maxLat = 51.52, maxLon = -0.10
+const precision = 6
+
+// ngeohash: bboxes(minLat, minLon, maxLat, maxLon, precision)
+const cells = polygonToGeohashes(
+  [[minLon, minLat], [maxLon, minLat], [maxLon, maxLat], [minLon, maxLat]],
+  { minPrecision: precision, maxPrecision: precision, maxCells: 100_000 },
+)
+// every cell is `precision` characters long; the result is sorted
+```
+
+Raise `maxCells` to suit the rectangle: the default of 500 throws `RangeError` when the result would be larger (this rectangle needs 570 cells at precision 7). Rectangles crossing ±180° longitude are not supported. The order of the result differs from `bboxes`, and cells on an exact rectangle edge may be included or excluded differently (see the boundary note below).
 
 **Key differences:**
 
-- **ESM-only** — no `require()`, use `import` syntax
-- **Input validation** — throws `RangeError` on invalid coordinates, NaN, or Infinity (ngeohash returns garbage)
-- **British English** — `neighbours` not `neighbors`, `neighbour` not `neighbor`
-- **Structured returns** — named object properties instead of positional arrays
+- **ESM-only**: no `require()`, use `import` syntax
+- **Input validation**: throws `RangeError` on invalid coordinates, NaN, or Infinity (ngeohash returns garbage)
+- **British English**: `neighbours` not `neighbors`, `neighbour` not `neighbor`
+- **Structured returns**: named object properties instead of positional arrays
+- **Precision handling**: `precision` is rounded to an integer, capped at 12 and must be at least 1. ngeohash's `'auto'` precision and string coordinates are rejected with `RangeError`
+- **Cell boundaries**: a coordinate exactly on a cell boundary goes to the upper cell in geohash-kit and the lower cell in ngeohash, so `encode(0, 0, 5)` is `'s0000'` here and `'7zzzz'` in ngeohash
 
 ## Benchmarking
 
@@ -247,7 +292,7 @@ Performance summary:
 - **`polygonToGeohashes`** (the main workhorse): 282–7,230 ops/sec depending on polygon size and precision
 - **Nostr functions** (tag ladders, filters): 256k–10M ops/sec
 
-For detailed performance analysis, device comparisons, and optimization guidance, see [docs/BENCHMARKS.md](./docs/BENCHMARKS.md).
+For detailed performance analysis, device comparisons, and optimization guidance, see [docs/BENCHMARKS.md](https://github.com/forgesworn/geohash-kit/blob/main/docs/BENCHMARKS.md).
 
 ## Runtime Compatibility
 
@@ -263,8 +308,8 @@ geohash-kit is pure ESM with zero dependencies and no Node.js-specific APIs. It 
 
 For Kotlin/Android parity implementations, use the compatibility contract and versioned vectors:
 
-- [docs/android-compat.md](./docs/android-compat.md)
-- [vectors/schema.json](./vectors/schema.json)
+- [docs/android-compat.md](https://github.com/forgesworn/geohash-kit/blob/main/docs/android-compat.md)
+- [vectors/schema.json](https://github.com/forgesworn/geohash-kit/blob/main/vectors/schema.json)
 - `npm run vectors:check` (run after `npm run build`)
 
 ## For AI Assistants
