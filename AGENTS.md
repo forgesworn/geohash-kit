@@ -31,7 +31,7 @@ Node.js 18+.
 ## Subpath Exports
 
 - `geohash-kit`: full API.
-- `geohash-kit/core`: encode, decode, bounds, neighbours, distance.
+- `geohash-kit/core`: encode, decode, bounds, neighbours, distance, midpoint.
 - `geohash-kit/coverage`: polygon coverage, GeoJSON, convex hull.
 - `geohash-kit/nostr`: Nostr g-tag ladders, REQ filters, ring expansion.
 
@@ -54,14 +54,20 @@ Coordinate order varies by context; this is the most common source of bugs:
 - `decode(hash)`: returns `{ lat, lon, error }`, not an array.
 - `bounds(hash)`: returns `{ minLat, maxLat, minLon, maxLon }`, named fields.
 - `pointInPolygon(point, polygon)`: takes `[x, y]` = `[lon, lat]` pairs (GeoJSON order).
-- `PolygonInput`: accepts `[lon, lat][]` or a GeoJSON Polygon/MultiPolygon.
+- `PolygonInput`: accepts `[lon, lat][]` or a GeoJSON Polygon/MultiPolygon. Rings may be
+  open or closed; the last vertex is joined to the first automatically.
+- `decode(hash).error` is `{ lat, lon }` in degrees: half the cell's height and width.
 - GeoJSON polygon vertices are always `[lon, lat]` per the GeoJSON spec, the
   opposite of `encode`.
 
 Other gotchas:
 
-- Precision defaults to 5 (~4.9 km); valid range is 1–9 for radius helpers,
-  1–12 for `encode`.
+- Precision defaults to 5 (~4.9 km) for `encode` and `nearbyFilter`; valid range is
+  1–9 for radius helpers, 1–12 for `encode`. ngeohash defaults to 9, so the two differ.
+- `createGTagFilter` derives precision with `radiusToPrecision` and always uses
+  one ring of neighbours; use `nearbyFilter` for explicit `precision` and `rings`.
+- `CoverageOptions` defaults: `minPrecision` 1, `maxPrecision` 9, `maxCells` 500,
+  `mergeThreshold` 1.0.
 - `neighbour` (British spelling), not `neighbor`; applies to identifiers too.
 - `contains(a, b)` is bidirectional prefix containment, not strict parent/child.
 - `matchesAny` checks prefix overlap in either direction.

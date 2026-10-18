@@ -2,7 +2,7 @@
 
 > Modern TypeScript geohash toolkit — encode, decode, cover polygons, and build Nostr filters.
 
-Zero dependencies. ESM-only. TypeScript native.
+Zero dependencies. ESM-only. TypeScript native. The root `geohash-kit` re-exports everything; the `core`, `coverage` and `nostr` subpaths group the same functions by module.
 
 Repository: https://github.com/forgesworn/geohash-kit
 Interactive demo: https://forgesworn.github.io/geohash-kit/
@@ -41,10 +41,10 @@ interface GeohashBounds {
 type Direction = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw'
 
 interface CoverageOptions {
-  minPrecision?: number    // default 1 — coarsest exploration level
-  maxPrecision?: number    // default 9 — finest exploration level
-  maxCells?: number        // default 500 — hard cap, triggers threshold tightening
-  mergeThreshold?: number  // default 1.0 — fraction of children to merge parent (0–1)
+  minPrecision?: number    // default 1: coarsest precision used when subdividing (rounded, clamped to 1-9)
+  maxPrecision?: number    // default 9: finest precision, used along edges (rounded, clamped to 1-9, never below minPrecision)
+  maxCells?: number        // default 500: result size limit; maxPrecision steps down until it fits, RangeError if even minPrecision does not
+  mergeThreshold?: number  // default 1.0, clamped to 0-1: 1.0 emits interior cells at maxPrecision and merges only full 32-sibling sets; 0.0 emits them as coarse as minPrecision and merges sets of 24 or more
 }
 
 interface GeohashGeoJSON {
@@ -75,7 +75,7 @@ type PolygonInput = [number, number][] | GeoJSONPolygon | GeoJSONMultiPolygon
 
 ### encode(lat, lon, precision?)
 
-Encode latitude/longitude to a geohash string. Default precision 5 (~4.9km).
+Encode latitude/longitude to a geohash string. Default precision 5 (~4.9km; ngeohash defaults to 9). Precision is rounded to an integer and capped at 12; it throws `RangeError` if it rounds to less than 1.
 
 ```typescript
 encode(lat: number, lon: number, precision?: number): string
@@ -87,12 +87,12 @@ encode(0, 0, 5)              // 's0000'
 
 ### decode(hash)
 
-Decode a geohash to its centre point with error margins.
+Decode a geohash to its centre point with error margins. `error` is `{ lat, lon }` in degrees: half the cell's height and width, so the cell spans `lat ± error.lat` and `lon ± error.lon`.
 
 ```typescript
 decode(hash: string): { lat: number; lon: number; error: { lat: number; lon: number } }
 
-decode('gcpvj')  // { lat: 51.51, lon: -0.13, error: { lat: 0.02, lon: 0.02 } }
+decode('gcpvj')  // { lat: 51.5259, lon: -0.1099, error: { lat: 0.022, lon: 0.022 } }
 ```
 
 ### bounds(hash)
@@ -102,7 +102,7 @@ Get the bounding rectangle of a geohash cell.
 ```typescript
 bounds(hash: string): GeohashBounds
 
-bounds('gcpvj')  // { minLat: 51.50, maxLat: 51.52, minLon: -0.15, maxLon: -0.10 }
+bounds('gcpvj')  // { minLat: 51.5039, maxLat: 51.5479, minLon: -0.1318, maxLon: -0.0879 }
 bounds('')       // { minLat: -90, maxLat: 90, minLon: -180, maxLon: 180 }
 ```
 
@@ -195,7 +195,7 @@ midpointFromCoords(0, 170, 0, -170)                      // ~{ lat: 0, lon: 180 
 
 ### midpointFromCoordsMulti(points)
 
-Geographic centroid of N coordinate pairs (spherical vector mean).
+Geographic centroid of N coordinate pairs (spherical vector mean). `points` must be a non-empty array of `{ lat, lon }` objects; an empty array throws `RangeError`.
 
 ```typescript
 midpointFromCoordsMulti(points: ReadonlyArray<{ lat: number; lon: number }>): { lat: number; lon: number }
@@ -204,7 +204,7 @@ midpointFromCoordsMulti([
   { lat: 51.5074, lon: -0.1278 },
   { lat: 53.4808, lon: -2.2426 },
   { lat: 55.9533, lon: -3.1883 },
-])  // ~{ lat: 53.5, lon: -1.9 }
+])  // ~{ lat: 53.65, lon: -1.80 }
 ```
 
 ### midpoint(hashA, hashB)
@@ -219,7 +219,7 @@ midpoint('gcpvj', 'u09tu')  // ~{ lat: 50.2, lon: 1.1 } (London ↔ Paris)
 
 ### radiusToPrecision(metres)
 
-Optimal geohash precision for a given search radius in metres.
+Optimal geohash precision for a given search radius in metres: the coarsest precision (1 to 9) whose approximate cell radius is no larger than `metres`, or 9 if `metres` is smaller than all of them.
 
 ```typescript
 radiusToPrecision(metres: number): number
@@ -263,8 +263,12 @@ Precision table:
 ### polygonToGeohashes(polygon, options?)
 
 Convert a polygon to a set of covering geohashes at variable precision.
-Uses adaptive threshold recursive subdivision with automatic threshold
-tightening to respect maxCells budget.
+Uses adaptive threshold recursive subdivision. If the result exceeds `maxCells`,
+`maxPrecision` is stepped down until it fits (`RangeError` if even `minPrecision` does not).
+The result is sorted.
+
+Vertices are `[lon, lat]`. Rings may be open or closed: `[A, B, C]` and `[A, B, C, A]` give the same
+result, and a repeated closing vertex on a GeoJSON ring is dropped. A ring needs at least three vertices.
 
 ```typescript
 polygonToGeohashes(
@@ -344,7 +348,7 @@ deduplicateGeohashes(hashes, { lossy: true })  // more aggressive merging
 
 ### pointInPolygon(point, polygon)
 
-Ray-casting point-in-polygon test.
+Ray-casting point-in-polygon test. `point` is `[lon, lat]` and `polygon` is a plain `[lon, lat][]` array (not GeoJSON); the ring closes automatically.
 
 ```typescript
 pointInPolygon(point: [number, number], polygon: [number, number][]): boolean
@@ -354,7 +358,7 @@ pointInPolygon([5, 5], [[0, 0], [10, 0], [10, 10], [0, 10]])  // true
 
 ### boundsOverlapsPolygon(bounds, polygon)
 
-Check if a geohash cell's bounds overlap a polygon.
+Check if a geohash cell's bounds overlap a polygon. `polygon` is `[lon, lat][]`.
 
 ```typescript
 boundsOverlapsPolygon(bounds: GeohashBounds, polygon: [number, number][]): boolean
@@ -362,7 +366,7 @@ boundsOverlapsPolygon(bounds: GeohashBounds, polygon: [number, number][]): boole
 
 ### boundsFullyInsidePolygon(bounds, polygon)
 
-Check if a geohash cell is fully inside a polygon.
+Check if a geohash cell is fully inside a polygon. `polygon` is `[lon, lat][]`.
 
 ```typescript
 boundsFullyInsidePolygon(bounds: GeohashBounds, polygon: [number, number][]): boolean
@@ -374,7 +378,7 @@ boundsFullyInsidePolygon(bounds: GeohashBounds, polygon: [number, number][]): bo
 
 ### createGTagLadder(geohash, minPrecision?)
 
-Generate multi-precision g-tag ladder for Nostr event publishing.
+Generate multi-precision g-tag ladder for Nostr event publishing. `minPrecision` defaults to 1; if it exceeds the geohash length the result is empty.
 
 ```typescript
 createGTagLadder(geohash: string, minPrecision?: number): string[][]
@@ -389,7 +393,7 @@ createGTagLadder('gcpvj', 3)
 ### createGTagFilter(lat, lon, radiusMetres)
 
 Generate a #g filter for Nostr REQ from coordinates and radius.
-Encodes location, selects precision from radius, expands to neighbours.
+Encodes location, selects precision with `radiusToPrecision(radiusMetres)`, then adds one ring of neighbours (the ring count is fixed at 1, so up to 9 hashes). This approximates the radius and does not guarantee to cover all of it; use `nearbyFilter` with more rings for wider coverage.
 
 ```typescript
 createGTagFilter(lat: number, lon: number, radiusMetres: number): { '#g': string[] }
@@ -411,7 +415,7 @@ createGTagFilterFromGeohashes(['gcpvj', 'gcpvm'])
 
 ### expandRings(hash, rings?)
 
-Expand geohash into concentric rings of neighbours.
+Expand geohash into concentric rings of neighbours. Index 0 is `[hash]` and index `n` is ring `n`. `rings` defaults to 1, is rounded and capped at 10; negative or non-finite values throw `RangeError`.
 
 ```typescript
 expandRings(hash: string, rings?: number): string[][]
@@ -425,7 +429,7 @@ expandRings('gcpvj', 2)
 
 ### nearbyFilter(lat, lon, options?)
 
-Convenience: encode + expand rings + flatten to filter.
+Convenience: encode + expand rings + flatten to filter. Defaults: `precision` 5, `rings` 1.
 
 ```typescript
 nearbyFilter(

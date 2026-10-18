@@ -4,7 +4,7 @@
 
 Interactive demo: https://forgesworn.github.io/geohash-kit/
 
-ESM-only. Three subpath exports: `geohash-kit/core`, `geohash-kit/coverage`, `geohash-kit/nostr`.
+ESM-only. The root `geohash-kit` re-exports the whole API. Three subpath exports group it by module for smaller imports: `geohash-kit/core`, `geohash-kit/coverage`, `geohash-kit/nostr`.
 
 ## Install
 
@@ -15,11 +15,11 @@ npm install geohash-kit
 ### geohash-kit/core
 Basic geohash operations: encode, decode, bounds, neighbours, distance.
 
-- encode(lat, lon, precision?) → geohash string
-- decode(hash) → { lat, lon, error }
+- encode(lat, lon, precision?) → geohash string (precision defaults to 5, rounded, capped at 12; ngeohash defaults to 9)
+- decode(hash) → { lat, lon, error } where error is { lat, lon } in degrees: half the cell's height and width
 - bounds(hash) → { minLat, maxLat, minLon, maxLon }
 - neighbours(hash) → { n, ne, e, se, s, sw, w, nw }
-- neighbour(hash, direction) → adjacent hash
+- neighbour(hash, direction) → adjacent hash; direction is a `Direction`: 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw'
 - children(hash) → 32 child hashes
 - contains(a, b) → boolean (prefix containment)
 - matchesAny(hash, candidates) → boolean
@@ -27,32 +27,32 @@ Basic geohash operations: encode, decode, bounds, neighbours, distance.
 - distanceFromCoords(lat1, lon1, lat2, lon2) → metres
 - midpoint(hashA, hashB) → { lat, lon }
 - midpointFromCoords(lat1, lon1, lat2, lon2) → { lat, lon }
-- midpointFromCoordsMulti(points) → { lat, lon } (spherical vector mean)
-- radiusToPrecision(metres) → precision level (1-9)
+- midpointFromCoordsMulti(points) → { lat, lon } (spherical vector mean); points is a non-empty `{ lat: number, lon: number }[]`
+- radiusToPrecision(metres) → precision level (1-9): the coarsest whose approximate cell radius is no larger than `metres`
 - precisionToRadius(precision) → metres
 
 ### geohash-kit/coverage
 Polygon-to-geohash coverage with adaptive threshold subdivision.
 
-**Coordinate order:** `polygonToGeohashes` accepts `[longitude, latitude]` pairs (GeoJSON order) — the opposite of `encode(latitude, longitude)`. This is the most common source of bugs when migrating from `encode`.
+**Coordinate order:** `polygonToGeohashes` accepts `[longitude, latitude]` pairs (GeoJSON order), the opposite of `encode(latitude, longitude)`. This is the most common source of bugs when migrating from `encode`. Rings may be open or closed (`[A, B, C]` and `[A, B, C, A]` give the same result); a ring needs at least three vertices.
 
-- polygonToGeohashes(polygon, options?) → multi-precision hash set (accepts [lon,lat][], GeoJSON Polygon, or MultiPolygon)
-- geohashesToGeoJSON(hashes) → GeoJSON FeatureCollection
-- geohashesToConvexHull(hashes) → polygon vertices
+- polygonToGeohashes(polygon, options?) → sorted multi-precision hash set (accepts [lon,lat][], GeoJSON Polygon, or MultiPolygon). Options (all optional): minPrecision (default 1), maxPrecision (default 9), maxCells (default 500; maxPrecision steps down to fit, RangeError if even minPrecision does not fit), mergeThreshold (default 1.0, range 0-1; 1.0 emits interior cells at maxPrecision, 0.0 as coarse as minPrecision). Precisions are rounded and clamped to 1-9
+- geohashesToGeoJSON(hashes) → GeohashGeoJSON: a FeatureCollection with one Polygon feature per hash, properties { geohash, precision }
+- geohashesToConvexHull(hashes) → [lon, lat][] hull vertices, counter-clockwise ([] for empty input)
 - convexHull(points) → [x, y][] (Andrew's monotone chain, counter-clockwise winding)
 - deduplicateGeohashes(hashes, options?) → ancestor-free set ({ lossy: true } for 30/32 merges)
-- pointInPolygon(point, polygon) → boolean
-- boundsOverlapsPolygon(bounds, polygon) → boolean
-- boundsFullyInsidePolygon(bounds, polygon) → boolean
+- pointInPolygon(point, polygon) → boolean; point is [lon, lat], polygon is [lon, lat][] (plain array, not GeoJSON)
+- boundsOverlapsPolygon(bounds, polygon) → boolean; bounds is { minLat, maxLat, minLon, maxLon }, polygon is [lon, lat][]
+- boundsFullyInsidePolygon(bounds, polygon) → boolean; same argument types
 
 ### geohash-kit/nostr
 Nostr-specific g-tag utilities for event publishing and relay subscription.
 
-- createGTagLadder(geohash, minPrecision?) → string[][] (event tags)
-- createGTagFilter(lat, lon, radiusMetres) → { "#g": string[] }
+- createGTagLadder(geohash, minPrecision?) → string[][] (event tags); minPrecision defaults to 1
+- createGTagFilter(lat, lon, radiusMetres) → { "#g": string[] }; precision is radiusToPrecision(radiusMetres) and rings is fixed at 1 (cell plus neighbours, up to 9 hashes), an approximation of the radius
 - createGTagFilterFromGeohashes(hashes) → { "#g": string[] }
-- expandRings(hash, rings?) → string[][] (concentric neighbour rings)
-- nearbyFilter(lat, lon, options?) → { "#g": string[] }
+- expandRings(hash, rings?) → string[][] (concentric neighbour rings; index 0 is [hash]; rings defaults to 1, capped at 10)
+- nearbyFilter(lat, lon, options?) → { "#g": string[] }; options { precision?, rings? } default to precision 5, rings 1
 - parseGTags(tags) → { geohash, precision }[]
 - bestGeohash(tags) → string | undefined
 
@@ -68,7 +68,7 @@ const hash = encode(51.5074, -0.1278) // 'gcpvj'
 const adj = neighbours(hash) // { n: '...', ne: '...', ... }
 
 // Cover a polygon with geohashes
-const coverage = polygonToGeohashes([[-0.15, 51.50], [-0.10, 51.50], [-0.10, 51.52], [-0.15, 51.52]])
+const coverage = polygonToGeohashes([[-0.15, 51.50], [-0.10, 51.50], [-0.10, 51.52], [-0.15, 51.52]]) // [lon, lat] pairs, ring left open
 
 // Generate Nostr event tags
 const tags = createGTagLadder(hash) // [['g','g'], ['g','gc'], ['g','gcp'], ['g','gcpv'], ['g','gcpvj']]
@@ -81,7 +81,7 @@ const filter = createGTagFilter(51.5074, -0.1278, 5000) // { '#g': ['gcpvj', 'gc
 
 geohash-kit vs the field:
 
-- **ngeohash** (171k/week) — CommonJS, no TypeScript, no polygon coverage, no Nostr, last published 2018. geohash-kit is a drop-in ESM replacement.
+- **ngeohash** (171k/week): CommonJS, no TypeScript, no polygon coverage, no Nostr, last published 2018. geohash-kit is an ESM alternative with a different API: `neighbours` is renamed, results are objects rather than arrays, and the default precision is 5 rather than 9. See the README migration section.
 - **geohashing** (7k/week) — TypeScript, but no polygon coverage, no Nostr g-tags.
 - **latlon-geohash** (19k/week) — no TypeScript native, no polygon, no Nostr.
 - **geohash-poly / shape2geohash** — single-precision brute-force polygon coverage only; no TypeScript, no Nostr.
