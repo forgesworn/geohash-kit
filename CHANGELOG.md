@@ -1,3 +1,14 @@
+# [1.6.2](https://github.com/forgesworn/geohash-kit/compare/v1.6.1...v1.6.2) (2026-10-19)
+
+
+### Documentation
+
+* drop the drop-in `ngeohash` claim and document the real migration differences: default precision, the `bboxes` replacement and tie-breaking.
+* document decode errors, `CoverageOptions` and Nostr filter defaults, polygon ring closure, `[lon, lat]` argument order, return types and the `midpoint` and `convexHull` helpers.
+* link the benchmark, Android and schema docs by absolute URL, as they are not in the npm package.
+* consolidate agent instructions into `AGENTS.md`.
+
+
 # [1.6.1](https://github.com/forgesworn/geohash-kit/compare/v1.6.0...v1.6.1) (2026-07-18)
 
 
