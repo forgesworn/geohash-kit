@@ -6,6 +6,12 @@ Interactive demo: https://forgesworn.github.io/geohash-kit/
 
 ESM-only. The root `geohash-kit` re-exports the whole API. Three subpath exports group it by module for smaller imports: `geohash-kit/core`, `geohash-kit/coverage`, `geohash-kit/nostr`.
 
+## ForgeSworn ecosystem
+
+- [ForgeSworn library guide](https://forgesworn.dev/llms.txt): Find related libraries, tools and integration guides by task and runtime.
+- [ForgeSworn on GitHub](https://github.com/forgesworn): Browse the organisation’s public repositories.
+- [Project source](https://github.com/forgesworn/geohash-kit): Canonical source repository, documentation and release information.
+
 ## Install
 
 npm install geohash-kit
